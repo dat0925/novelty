@@ -599,6 +599,8 @@ async function generateDesign() {
 
   const prompt = buildAPIPrompt(data);
   document.getElementById('promptText').textContent = prompt;
+  document.getElementById('promptBox').classList.add('visible');
+  promptVisible = true;
 
   showLoading(true, 'AIがデザインを生成中...');
   document.getElementById('btnGenerate').disabled = true;
@@ -630,30 +632,37 @@ async function generateDesign() {
 
     // Extract JSON - 複数のフォールバック戦略
     let parsed;
+    let rawText = text;
     try {
+      // Strategy 1: ```json ... ``` ブロック
       const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
       if (jsonMatch) {
         parsed = JSON.parse(jsonMatch[1]);
       } else {
-        const codeMatch = text.match(/```\s*([\s\S]*?)```/);
+        // Strategy 2: ``` ... ``` ブロック
+        const codeMatch = text.match(/```\s*([\s\S]*?)```/s);
         if (codeMatch) {
           parsed = JSON.parse(codeMatch[1]);
         } else {
-          const braceMatch = text.match(/\{\s*"variations"[\s\S]*\}/);
-          if (braceMatch) {
-            parsed = JSON.parse(braceMatch[0]);
+          // Strategy 3: { から始まる最初のJSONオブジェクトを探す
+          const start = text.indexOf('{');
+          const end = text.lastIndexOf('}');
+          if (start !== -1 && end !== -1) {
+            parsed = JSON.parse(text.slice(start, end + 1));
           } else {
-            console.error('Raw API response:', text);
             throw new Error('JSON_NOT_FOUND');
           }
         }
       }
     } catch(parseErr) {
-      if (parseErr.message === 'JSON_NOT_FOUND') {
-        throw new Error('AIの応答形式が想定外でした。もう一度お試しください。');
-      }
-      console.error('JSON parse error, raw text:', text);
-      throw new Error('AIの応答のパースに失敗しました。もう一度お試しください。');
+      // エラー時は生レスポンスを表示して原因確認できるように
+      document.getElementById('promptText').textContent =
+        '=== AIの生レスポンス（デバッグ用）===\n\n' + rawText;
+      document.getElementById('promptBox').classList.add('visible');
+      promptVisible = true;
+      throw new Error(parseErr.message === 'JSON_NOT_FOUND'
+        ? 'AIがJSON形式で返しませんでした。上部の「プロンプト確認」欄に生レスポンスを表示しました。'
+        : 'JSONパース失敗。上部の「プロンプト確認」欄に生レスポンスを表示しました。');
     }
     currentVariations = parsed.variations || [];
     if (!currentVariations.length) throw new Error('バリエーションが空です');
@@ -833,6 +842,12 @@ function clearError() {
 let promptVisible = false;
 function togglePrompt() {
   promptVisible = !promptVisible;
+  if (promptVisible) {
+    // 現時点のフォーム内容でプロンプトを組み立てて表示
+    const data = buildPrompt();
+    const prompt = buildAPIPrompt(data);
+    document.getElementById('promptText').textContent = prompt;
+  }
   document.getElementById('promptBox').classList.toggle('visible', promptVisible);
 }
 </script>
