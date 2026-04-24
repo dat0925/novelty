@@ -581,7 +581,7 @@ QRコードはSVGで簡易表現（白黒の格子パターン）。装飾はSVG
 - 各パターンは明確に異なるデザイン方向性を持つこと
 - 文字は全て日本語で、視認性を重視
 
-JSON以外は出力しないでください。`;
+JSON以外は絶対に出力しないでください。説明文・前置き・後書きも不要です。最初の文字は { で始めてください。`;
 }
 
 // ===== GENERATE =====
@@ -628,11 +628,33 @@ async function generateDesign() {
     const result = await res.json();
     const text = result.content.map(b => b.text || '').join('');
 
-    // Extract JSON
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
-    if (!jsonMatch) throw new Error('AIの応答からJSONを取得できませんでした');
-
-    const parsed = JSON.parse(jsonMatch[1]);
+    // Extract JSON - 複数のフォールバック戦略
+    let parsed;
+    try {
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1]);
+      } else {
+        const codeMatch = text.match(/```\s*([\s\S]*?)```/);
+        if (codeMatch) {
+          parsed = JSON.parse(codeMatch[1]);
+        } else {
+          const braceMatch = text.match(/\{\s*"variations"[\s\S]*\}/);
+          if (braceMatch) {
+            parsed = JSON.parse(braceMatch[0]);
+          } else {
+            console.error('Raw API response:', text);
+            throw new Error('JSON_NOT_FOUND');
+          }
+        }
+      }
+    } catch(parseErr) {
+      if (parseErr.message === 'JSON_NOT_FOUND') {
+        throw new Error('AIの応答形式が想定外でした。もう一度お試しください。');
+      }
+      console.error('JSON parse error, raw text:', text);
+      throw new Error('AIの応答のパースに失敗しました。もう一度お試しください。');
+    }
     currentVariations = parsed.variations || [];
     if (!currentVariations.length) throw new Error('バリエーションが空です');
 
