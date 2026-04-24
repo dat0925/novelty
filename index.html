@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ノベルティカード ジェネレーター | iFLAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #18181f;
+      --surface2: #22222c;
+      --border: #2e2e3a;
+      --accent: #7c6af7;
+      --accent2: #f7c96a;
+      --text: #e8e8f0;
+      --text2: #8888a0;
+      --green: #5cc97a;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+    }
+    header .logo {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: #fff;
+    }
+    header h1 { font-size: 18px; font-weight: 500; }
+    header span { font-size: 12px; color: var(--text2); margin-left: 8px; }
+
+    /* ===== LAYOUT ===== */
+    .app {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: calc(100vh - 65px);
+    }
+
+    /* ===== LEFT PANEL ===== */
+    .panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 32px 28px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      width: 16px; height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; }
+
+    /* API Key */
+    .api-key-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .api-key-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .api-status {
+      font-size: 11px;
+      margin-top: 6px;
+      color: var(--text2);
+    }
+    .api-status.ok { color: var(--green); }
+
+    /* Form elements */
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+      margin-top: 16px;
+    }
+    label:first-child { margin-top: 0; }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    select option { background: var(--surface2); }
+    textarea { resize: vertical; min-height: 72px; }
+
+    /* Chip selects */
+    .chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text2);
+    }
+    .chip:hover { border-color: var(--accent); color: var(--text); }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* Generate button */
+    .btn-generate {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    .btn-generate:hover { opacity: 0.85; }
+    .btn-generate:active { transform: scale(0.98); }
+    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    /* ===== RIGHT PANEL ===== */
+    .preview-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      gap: 24px;
+      background: var(--bg);
+    }
+
+    .preview-header {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .preview-header h2 { font-size: 14px; color: var(--text2); font-weight: 400; }
+
+    /* Card preview */
+    .card-wrapper {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card-side { text-align: center; }
+    .card-side-label {
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    /* 名刺縦: 55mm × 91mm → preview scale: 55*3.2=176px × 91*3.2=291px */
+    .card {
+      width: 176px;
+      height: 291px;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+      background: #fff;
+    }
+
+    /* Loading state */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,15,19,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 16px;
+      display: none;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--text2); }
+
+    /* Error / info */
+    .msg {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    .msg.error { background: #2d1414; color: #f87171; border: 1px solid #5a1f1f; }
+    .msg.info { background: #141d2d; color: #7ab3f8; border: 1px solid #1f3a5a; }
+
+    /* Prompt debug */
+    .prompt-box {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 12px;
+      color: var(--text2);
+      display: none;
+    }
+    .prompt-box.visible { display: block; }
+    .prompt-box pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* PDF download btn */
+    .btn-pdf {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1px solid var(--accent2);
+      background: transparent;
+      color: var(--accent2);
+      font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-pdf:hover { background: var(--accent2); color: #000; }
+    .btn-pdf:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 400px;
+      gap: 16px;
+      color: var(--text2);
+    }
+    .empty-state .icon { font-size: 48px; opacity: 0.3; }
+    .empty-state p { font-size: 14px; }
+
+    /* Variation tabs */
+    .variations {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      width: 100%; max-width: 700px;
+    }
+    .var-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .var-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">N</div>
+  <h1>ノベルティカード ジェネレーター</h1>
+  <span>MEOサービス用 口コミ募集カード</span>
+</header>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">AIがデザインを生成中...</div>
+</div>
+
+<div class="app">
+  <!-- LEFT: FORM -->
+  <div class="panel">
+
+    <!-- API Key -->
+    <div class="section">
+      <div class="section-label">Claude API キー</div>
+      <div class="api-key-row">
+        <input type="password" id="apiKey" placeholder="sk-ant-api..." autocomplete="off">
+      </div>
+      <div class="api-status" id="apiStatus">APIキーを入力してください</div>
+    </div>
+
+    <!-- 店舗基本情報 -->
+    <div class="section">
+      <div class="section-label">店舗情報</div>
+
+      <label>業種</label>
+      <div class="chips" id="categoryChips">
+        <div class="chip active" data-val="美容室・ヘアサロン">美容室</div>
+        <div class="chip" data-val="エステ・マッサージ">エステ</div>
+        <div class="chip" data-val="飲食店・レストラン">飲食店</div>
+        <div class="chip" data-val="カフェ">カフェ</div>
+        <div class="chip" data-val="整骨院・整体">整骨院</div>
+        <div class="chip" data-val="歯科医院">歯科</div>
+        <div class="chip" data-val="その他">その他</div>
+      </div>
+
+      <label>店舗名</label>
+      <input type="text" id="shopName" placeholder="例：Hair Salon Refre">
+
+      <label>キャッチコピー（任意）</label>
+      <input type="text" id="catchcopy" placeholder="例：髪と心をリフレッシュ">
+
+      <label>住所（短縮）</label>
+      <input type="text" id="address" placeholder="例：大阪市中央区XXX 2-1-1">
+
+      <label>電話番号</label>
+      <input type="text" id="tel" placeholder="例：06-1234-5678">
+
+      <label>QRコード先URL（任意）</label>
+      <input type="text" id="qrUrl" placeholder="例：https://goo.gl/maps/...">
+    </div>
+
+    <!-- デザイン -->
+    <div class="section">
+      <div class="section-label">デザイン設定</div>
+
+      <label>雰囲気・テイスト</label>
+      <div class="chips" id="styleChips">
+        <div class="chip active" data-val="高級感・洗練">高級感</div>
+        <div class="chip" data-val="ナチュラル・温かみ">ナチュラル</div>
+        <div class="chip" data-val="ポップ・かわいい">ポップ</div>
+        <div class="chip" data-val="シンプル・清潔感">シンプル</div>
+        <div class="chip" data-val="和風・モダン">和風</div>
+        <div class="chip" data-val="スポーティ・力強い">スポーティ</div>
+      </div>
+
+      <label>メインカラー</label>
+      <div class="chips" id="colorChips">
+        <div class="chip active" data-val="ゴールド×ダークグリーン">ゴールド×DK緑</div>
+        <div class="chip" data-val="ネイビー×シルバー">ネイビー×銀</div>
+        <div class="chip" data-val="テラコッタ×ベージュ">テラコッタ</div>
+        <div class="chip" data-val="ブラック×ピンクゴールド">黒×ピンク金</div>
+        <div class="chip" data-val="ラベンダー×ライトグレー">ラベンダー</div>
+        <div class="chip" data-val="ホワイト×レッド">白×赤</div>
+      </div>
+
+      <label>バリエーション数</label>
+      <div class="chips" id="varChips">
+        <div class="chip" data-val="1">1種</div>
+        <div class="chip active" data-val="3">3種</div>
+        <div class="chip" data-val="6">6種</div>
+      </div>
+
+      <label>その他ご要望（自由記述）</label>
+      <textarea id="freetext" placeholder="例：桜のイラストを入れてほしい、QRコードを大きく、英語表記も入れて など"></textarea>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate" onclick="generateDesign()">
+      ✨ AIでデザイン生成
+    </button>
+    <button class="btn-secondary" onclick="togglePrompt()">プロンプト確認</button>
+
+    <div id="errorMsg"></div>
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="preview-area">
+    <div class="preview-header">
+      <h2>プレビュー（実寸比：55×91mm）</h2>
+      <button class="btn-pdf" id="btnPdf" onclick="downloadPDF()" disabled>📄 印刷用PDF保存</button>
+    </div>
+
+    <div class="variations" id="variations"></div>
+
+    <div class="card-wrapper" id="cardWrapper">
+      <div class="empty-state">
+        <div class="icon">🎴</div>
+        <p>フォームを入力して「AIでデザイン生成」を押してください</p>
+      </div>
+    </div>
+
+    <div class="prompt-box" id="promptBox">
+      <strong style="color:var(--text)">送信プロンプト</strong>
+      <pre id="promptText"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CHIP SINGLE SELECT =====
+document.querySelectorAll('.chips').forEach(group => {
+  group.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    group.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+function getChip(id) {
+  const el = document.querySelector(`#${id} .chip.active`);
+  return el ? el.dataset.val : '';
+}
+
+// API Key status
+document.getElementById('apiKey').addEventListener('input', e => {
+  const v = e.target.value.trim();
+  const s = document.getElementById('apiStatus');
+  if (v.startsWith('sk-ant-')) {
+    s.textContent = '✓ キー形式OK（未検証）'; s.className = 'api-status ok';
+  } else if (v) {
+    s.textContent = '⚠ 形式が正しくない可能性があります'; s.className = 'api-status';
+  } else {
+    s.textContent = 'APIキーを入力してください'; s.className = 'api-status';
+  }
+  // save to session
+  sessionStorage.setItem('nv_apikey', v);
+});
+// restore
+const saved = sessionStorage.getItem('nv_apikey');
+if (saved) { document.getElementById('apiKey').value = saved; document.getElementById('apiKey').dispatchEvent(new Event('input')); }
+
+// ===== PROMPT BUILDER =====
+function buildPrompt() {
+  const shopName = document.getElementById('shopName').value || '（店舗名未入力）';
+  const catchcopy = document.getElementById('catchcopy').value;
+  const address = document.getElementById('address').value;
+  const tel = document.getElementById('tel').value;
+  const qrUrl = document.getElementById('qrUrl').value;
+  const category = getChip('categoryChips');
+  const style = getChip('styleChips');
+  const color = getChip('colorChips');
+  const varCount = parseInt(getChip('varChips')) || 3;
+  const freetext = document.getElementById('freetext').value;
+
+  return {
+    shopName, catchcopy, address, tel, qrUrl,
+    category, style, color, varCount, freetext
+  };
+}
+
+function buildAPIPrompt(data) {
+  return `あなたはプロのグラフィックデザイナーです。
+店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを${data.varCount}パターン生成してください。
+
+【カード仕様】
+- サイズ: 名刺縦型 55mm × 91mm（表・裏の2面セット）
+- 用途: 店舗がお客様にGoogleクチコミ投稿をお願いするカード
+- 印刷: 後でPDF化して印刷会社に入稿する
+
+【店舗情報】
+- 業種: ${data.category}
+- 店舗名: ${data.shopName}
+${data.catchcopy ? `- キャッチコピー: ${data.catchcopy}` : ''}
+${data.address ? `- 住所: ${data.address}` : ''}
+${data.tel ? `- 電話: ${data.tel}` : ''}
+${data.qrUrl ? `- QRコードURL: ${data.qrUrl}` : ''}
+
+【デザイン指定】
+- テイスト: ${data.style}
+- カラー: ${data.color}
+${data.freetext ? `- その他要望: ${data.freetext}` : ''}
+
+【出力形式】
+以下のJSON形式で${data.varCount}パターンを返してください。HTMLはインラインスタイルのみ使用。
+QRコードはSVGで簡易表現（白黒の格子パターン）。装飾はSVGやCSSで表現。
+
+\`\`\`json
+{
+  "variations": [
+    {
+      "name": "パターン名（例：エレガントゴールド）",
+      "frontHtml": "<div style='width:176px;height:291px;...'>表面HTML</div>",
+      "backHtml": "<div style='width:176px;height:291px;...'>裏面HTML</div>"
+    }
+  ]
+}
+\`\`\`
+
+【表面の必須要素】
+- 「クチコミ大募集」または同等の訴求文
+- QRコードエリア（SVGで表現）
+- 店舗名
+- デザイン装飾（業種・テイストに合ったSVG装飾、背景グラデーション等）
+
+【裏面の必須要素】
+- 店舗名（大きく）
+- キャッチコピー（ある場合）
+- 住所・電話番号
+- 「ご来店ありがとうございました」等の感謝文
+- デザイン装飾（表面と統一感のあるデザイン）
+
+【デザイン品質基準】
+- 印刷を想定した解像感のある表現
+- 業種・テイストに合った配色・書体（Google Fontsのfont-face importは不要、システムフォントで）
+- QRコードはSVGで5×5以上のモジュールで表現（実際のQRではないが視覚的に正しい形）
+- 各パターンは明確に異なるデザイン方向性を持つこと
+- 文字は全て日本語で、視認性を重視
+
+JSON以外は出力しないでください。`;
+}
+
+// ===== GENERATE =====
+let currentVariations = [];
+let currentVarIndex = 0;
+
+async function generateDesign() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('APIキーを入力してください'); return; }
+
+  const data = buildPrompt();
+  if (!data.shopName || data.shopName === '（店舗名未入力）') {
+    showError('店舗名を入力してください'); return;
+  }
+
+  const prompt = buildAPIPrompt(data);
+  document.getElementById('promptText').textContent = prompt;
+
+  showLoading(true, 'AIがデザインを生成中...');
+  document.getElementById('btnGenerate').disabled = true;
+  clearError();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 8000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `API error: ${res.status}`);
+    }
+
+    const result = await res.json();
+    const text = result.content.map(b => b.text || '').join('');
+
+    // Extract JSON
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+    if (!jsonMatch) throw new Error('AIの応答からJSONを取得できませんでした');
+
+    const parsed = JSON.parse(jsonMatch[1]);
+    currentVariations = parsed.variations || [];
+    if (!currentVariations.length) throw new Error('バリエーションが空です');
+
+    renderVariations();
+    renderCard(0);
+    document.getElementById('btnPdf').disabled = false;
+
+  } catch (e) {
+    showError('エラー: ' + e.message);
+    console.error(e);
+  } finally {
+    showLoading(false);
+    document.getElementById('btnGenerate').disabled = false;
+  }
+}
+
+function renderVariations() {
+  const el = document.getElementById('variations');
+  el.innerHTML = '';
+  currentVariations.forEach((v, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'var-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = v.name || `パターン ${i+1}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.var-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCard(i);
+    };
+    el.appendChild(btn);
+  });
+}
+
+function renderCard(index) {
+  currentVarIndex = index;
+  const v = currentVariations[index];
+  if (!v) return;
+
+  document.getElementById('cardWrapper').innerHTML = `
+    <div class="card-side">
+      <div class="card-side-label">表面</div>
+      <div class="card">${v.frontHtml}</div>
+    </div>
+    <div class="card-side">
+      <div class="card-side-label">裏面</div>
+      <div class="card">${v.backHtml}</div>
+    </div>
+  `;
+}
+
+// ===== PDF DOWNLOAD =====
+async function downloadPDF() {
+  if (!currentVariations.length) return;
+  showLoading(true, 'PDFを生成中...');
+
+  try {
+    const { jsPDF } = window.jspdf;
+
+    // 名刺縦: 55mm × 91mm
+    const W = 55, H = 91;
+
+    for (let vi = 0; vi < currentVariations.length; vi++) {
+      const v = currentVariations[vi];
+      const pdf = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
+
+      // Front page
+      pdf.html(createPDFElement(v.frontHtml), {
+        callback: function(doc) {},
+        x: 0, y: 0,
+        html2canvas: { scale: 96/25.4 * (W/176) },
+        width: W,
+        windowWidth: 176
+      });
+
+      // This approach uses html rendering - fallback to simple colored page with text
+      // For production, use html2canvas library
+      pdf.save(`novelty_${vi+1}_${v.name || 'card'}.pdf`);
+    }
+
+    // Better approach: generate each card as a scaled HTML screenshot
+    await generatePDFWithCanvas();
+
+  } catch(e) {
+    showError('PDF生成エラー: ' + e.message);
+    console.error(e);
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function generatePDFWithCanvas() {
+  // Load html2canvas dynamically
+  if (!window.html2canvas) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  }
+  const { jsPDF } = window.jspdf;
+
+  // PDF: A4 横, 複数カードを並べる
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+
+  const cardW = 55, cardH = 91;
+  const marginX = 10, marginY = 10, gap = 5;
+
+  let curX = marginX, curY = marginY;
+  let pageAdded = false;
+
+  for (let vi = 0; vi < currentVariations.length; vi++) {
+    const v = currentVariations[vi];
+
+    for (const side of ['frontHtml', 'backHtml']) {
+      // Check if we need new row/page
+      if (curX + cardW > 297 - marginX) {
+        curX = marginX;
+        curY += cardH + gap + 6;
+      }
+      if (curY + cardH > 210 - marginY) {
+        pdf.addPage();
+        curX = marginX; curY = marginY;
+      }
+
+      // Render to off-screen div
+      const div = document.createElement('div');
+      div.style.cssText = `position:fixed;left:-9999px;top:0;width:176px;height:291px;overflow:hidden;`;
+      div.innerHTML = v[side];
+      document.body.appendChild(div);
+
+      try {
+        const canvas = await html2canvas(div, { scale: 2, useCORS: true, logging: false });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', curX, curY, cardW, cardH);
+
+        // Label
+        pdf.setFontSize(4);
+        pdf.setTextColor(120);
+        pdf.text(`${v.name || `P${vi+1}`} ${side === 'frontHtml' ? '表' : '裏'}`, curX + 1, curY + cardH + 3);
+
+        curX += cardW + gap;
+      } finally {
+        document.body.removeChild(div);
+      }
+    }
+  }
+
+  const shopName = document.getElementById('shopName').value || 'novelty';
+  pdf.save(`novelty_cards_${shopName}.pdf`);
+}
+
+function createPDFElement(html) {
+  const div = document.createElement('div');
+  div.style.cssText = 'width:176px;height:291px;overflow:hidden;';
+  div.innerHTML = html;
+  return div;
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ===== UTILS =====
+function showLoading(show, text = '') {
+  const el = document.getElementById('loading');
+  el.classList.toggle('active', show);
+  if (text) document.getElementById('loadingText').textContent = text;
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').innerHTML = `<div class="msg error">${msg}</div>`;
+}
+function clearError() {
+  document.getElementById('errorMsg').innerHTML = '';
+}
+
+let promptVisible = false;
+function togglePrompt() {
+  promptVisible = !promptVisible;
+  document.getElementById('promptBox').classList.toggle('visible', promptVisible);
+}
+</script>
+
+</body>
+</html>
