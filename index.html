@@ -9,15 +9,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
-      --bg: #0f0f13;
-      --surface: #18181f;
-      --surface2: #22222c;
-      --border: #2e2e3a;
-      --accent: #7c6af7;
-      --accent2: #f7c96a;
-      --text: #e8e8f0;
-      --text2: #8888a0;
-      --green: #5cc97a;
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #f0f1f4;
+      --border: #dde0e8;
+      --accent: #5b4ef0;
+      --accent2: #c47f00;
+      --text: #1a1a2e;
+      --text2: #6b7080;
+      --green: #1a8a3a;
       --radius: 12px;
     }
 
@@ -135,7 +135,7 @@
       outline: none;
       border-color: var(--accent);
     }
-    select option { background: var(--surface2); }
+    select option { background: var(--surface); color: var(--text); }
     textarea { resize: vertical; min-height: 72px; }
 
     /* Chip selects */
@@ -235,7 +235,7 @@
       height: 291px;
       border-radius: 4px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
       position: relative;
       background: #fff;
     }
@@ -243,7 +243,7 @@
     /* Loading state */
     .loading-overlay {
       position: fixed; inset: 0;
-      background: rgba(15,15,19,0.85);
+      background: rgba(244,245,247,0.88);
       display: flex;
       flex-direction: column;
       align-items: center;
