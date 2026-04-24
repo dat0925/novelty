@@ -545,27 +545,26 @@ ${data.qrUrl ? `- QRコードURL: ${data.qrUrl}` : ''}
 - カラー: ${data.color}
 ${data.freetext ? `- その他要望: ${data.freetext}` : ''}
 
-【出力形式】
-以下のJSON形式で${data.varCount}パターンを返してください。HTMLはインラインスタイルのみ使用。
-QRコードはSVGで簡易表現（白黒の格子パターン）。装飾はSVGやCSSで表現。
+【出力形式 - 厳守】
+以下のJSON形式で${data.varCount}パターンを出力してください。
 
-\`\`\`json
-{
-  "variations": [
-    {
-      "name": "パターン名（例：エレガントゴールド）",
-      "frontHtml": "<div style='width:176px;height:291px;...'>表面HTML</div>",
-      "backHtml": "<div style='width:176px;height:291px;...'>裏面HTML</div>"
-    }
-  ]
-}
-\`\`\`
+重要なルール：
+1. HTMLの属性値は必ずダブルクォートを使用してください（例: style="color:red" ← 正しい、style='color:red' ← NG）
+2. HTML内でダブルクォートが必要な場合は &quot; に置き換えてください
+3. JSON文字列内にバックスラッシュや制御文字を入れないでください
+4. frontHtml と backHtml の値はJSON文字列として有効である必要があります
+
+出力例：
+{"variations":[{"name":"エレガントゴールド","frontHtml":"<div style=\\"width:176px;height:291px;background:linear-gradient(180deg,#1a2f23,#0d1a14);\\"><p style=\\"color:#c9a84c;\\">クチコミ大募集</p></div>","backHtml":"<div style=\\"width:176px;height:291px;\\"><p>店舗名</p></div>"}]}
 
 【表面の必須要素】
-- 「クチコミ大募集」または同等の訴求文
-- QRコードエリア（SVGで表現）
+- 「クチコミ大募集」または同等の訴求文（目立つサイズで）
+- QRコードエリア（下記SVGをそのまま使用してください）
 - 店舗名
 - デザイン装飾（業種・テイストに合ったSVG装飾、背景グラデーション等）
+
+QRコード用SVG（このまま使用）:
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>
 
 【裏面の必須要素】
 - 店舗名（大きく）
@@ -575,13 +574,12 @@ QRコードはSVGで簡易表現（白黒の格子パターン）。装飾はSVG
 - デザイン装飾（表面と統一感のあるデザイン）
 
 【デザイン品質基準】
-- 印刷を想定した解像感のある表現
-- 業種・テイストに合った配色・書体（Google Fontsのfont-face importは不要、システムフォントで）
-- QRコードはSVGで5×5以上のモジュールで表現（実際のQRではないが視覚的に正しい形）
-- 各パターンは明確に異なるデザイン方向性を持つこと
-- 文字は全て日本語で、視認性を重視
+- 業種・テイストに合った配色（インラインstyleのみ使用、classやCSSブロック禁止）
+- 各パターンは明確に異なるデザイン方向性
+- 文字は全て日本語、視認性重視
+- font-familyはシステムフォントのみ（Hiragino Mincho ProN, Yu Mincho, serif など）
 
-JSON以外は絶対に出力しないでください。説明文・前置き・後書きも不要です。最初の文字は { で始めてください。`;
+JSON以外は絶対に出力しないでください。最初の文字は { で始めてください。`;
 }
 
 // ===== GENERATE =====
@@ -634,35 +632,76 @@ async function generateDesign() {
     let parsed;
     let rawText = text;
     try {
+      let jsonStr = '';
+
       // Strategy 1: ```json ... ``` ブロック
       const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
       if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[1]);
+        jsonStr = jsonMatch[1];
       } else {
         // Strategy 2: ``` ... ``` ブロック
         const codeMatch = text.match(/```\s*([\s\S]*?)```/s);
         if (codeMatch) {
-          parsed = JSON.parse(codeMatch[1]);
+          jsonStr = codeMatch[1];
         } else {
-          // Strategy 3: { から始まる最初のJSONオブジェクトを探す
+          // Strategy 3: { から } まで切り出す
           const start = text.indexOf('{');
           const end = text.lastIndexOf('}');
           if (start !== -1 && end !== -1) {
-            parsed = JSON.parse(text.slice(start, end + 1));
+            jsonStr = text.slice(start, end + 1);
           } else {
             throw new Error('JSON_NOT_FOUND');
           }
         }
       }
+
+      // まずそのままパース試みる
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch(e1) {
+        // 失敗したらJSON修復を試みる
+        // HTML属性のシングルクォートをダブルクォートに変換する修復は複雑なので
+        // 代わりに: frontHtml/backHtml の値部分だけ抽出するアプローチ
+        const variations = [];
+        const nameRe = /"name"\s*:\s*"([^"]+)"/g;
+        const frontRe = /"frontHtml"\s*:\s*"([\s\S]*?)(?<!\\)",\s*"backHtml"/g;
+        const backRe = /"backHtml"\s*:\s*"([\s\S]*?)(?<!\\)"\s*\}/g;
+
+        // より単純な方法: 各バリエーションブロックを個別に処理
+        const varBlocks = jsonStr.split(/\},\s*\{/);
+        for (const block of varBlocks) {
+          const cleanBlock = block.replace(/^\s*[\[{]*/, '').replace(/[\]}]*\s*$/, '');
+          const nameM = cleanBlock.match(/"name"\s*:\s*"([^"]+)"/);
+
+          // frontHtml と backHtml を貪欲でなく取得
+          // style='...' のシングルクォートをダブルクォートに置換してからパース
+          let repaired = cleanBlock
+            .replace(/style='([^']*?)'/g, (m, p1) => `style="${p1}"`)
+            .replace(/(['"])\s*:\s*'([\s\S]*?)'\s*([,}])/g, '$1: "$2"$3');
+
+          try {
+            const obj = JSON.parse(`{${repaired}}`);
+            if (obj.name && (obj.frontHtml || obj.backHtml)) {
+              variations.push(obj);
+            }
+          } catch(e2) {
+            // このブロックはスキップ
+            console.warn('Block parse failed:', repaired.slice(0, 100));
+          }
+        }
+
+        if (variations.length > 0) {
+          parsed = { variations };
+        } else {
+          throw new Error('REPAIR_FAILED');
+        }
+      }
     } catch(parseErr) {
-      // エラー時は生レスポンスを表示して原因確認できるように
       document.getElementById('promptText').textContent =
         '=== AIの生レスポンス（デバッグ用）===\n\n' + rawText;
       document.getElementById('promptBox').classList.add('visible');
       promptVisible = true;
-      throw new Error(parseErr.message === 'JSON_NOT_FOUND'
-        ? 'AIがJSON形式で返しませんでした。上部の「プロンプト確認」欄に生レスポンスを表示しました。'
-        : 'JSONパース失敗。上部の「プロンプト確認」欄に生レスポンスを表示しました。');
+      throw new Error('JSONパース失敗。「プロンプト確認」欄に生レスポンスを表示しました。もう一度お試しください。');
     }
     currentVariations = parsed.variations || [];
     if (!currentVariations.length) throw new Error('バリエーションが空です');
