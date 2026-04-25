@@ -6,6 +6,7 @@
   <title>ノベルティカード ジェネレーター | iFLAG</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root{--bg:#f4f5f7;--sf:#fff;--sf2:#f0f1f4;--bd:#dde0e8;--ac:#5b4ef0;--acl:#ede9ff;--ac2:#b86e00;--tx:#1a1a2e;--tx2:#6b7080;--gr:#1a8a3a;--rd:#dc2626;}
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -583,7 +584,31 @@ async function lookupZip(){
 
 function getAddr(){return[document.getElementById('pref').value,document.getElementById('addr').value,document.getElementById('addrSub').value].filter(Boolean).join(' ');}
 
-function buildPrompt(){
+// ===== QR CODE GENERATOR =====
+function generateQRDataUrl(url, sizePx){
+  return new Promise((resolve)=>{
+    const tmp=document.createElement('div');
+    tmp.style.cssText='position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(tmp);
+    try{
+      new QRCode(tmp,{text:url,width:sizePx,height:sizePx,correctLevel:QRCode.CorrectLevel.M});
+      // QRCode renders an img or canvas – wait one tick
+      setTimeout(()=>{
+        const img=tmp.querySelector('img');
+        const canvas=tmp.querySelector('canvas');
+        if(img&&img.src){resolve(img.src);}
+        else if(canvas){resolve(canvas.toDataURL('image/png'));}
+        else{resolve(null);}
+        document.body.removeChild(tmp);
+      },200);
+    }catch(e){
+      document.body.removeChild(tmp);
+      resolve(null);
+    }
+  });
+}
+
+function buildPrompt(qrImgTag){
   const d={cat:getCat(),shop:document.getElementById('shopName').value.trim(),
     catch:document.getElementById('catchcopy').value,addr:getAddr(),
     tel:document.getElementById('tel').value,qr:document.getElementById('qrUrl').value,
@@ -592,6 +617,7 @@ function buildPrompt(){
     layout:gc('layoutChips'),font:gc('fontChips'),
     decor:gc('decorChips'),bg:gc('bgChips'),qrsize:gc('qrSizeChips'),
     vars:parseInt(gc('varChips'))||3,design:document.getElementById('designNote').value};
+
   return `あなたはプロのグラフィックデザイナーです。
 店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを${d.vars}パターン生成してください。
 
@@ -625,23 +651,12 @@ ${d.design?'- その他要望: '+d.design:''}
 出力形式:
 {"variations":[{"name":"パターン名","frontHtml":"<div style=\\"width:176px;height:291px\\">...</div>","backHtml":"<div style=\\"width:176px;height:291px\\">...</div>"}]}
 
-【出力ルール - 必ず守ること】
-1. JSON形式のみ出力、最初の文字は { 、説明文や前置き一切不要
-2. HTML属性は必ずダブルクォート: style="..." (シングルクォート禁止)
-3. JSON内のダブルクォートは \\" にエスケープ
-4. classやstyleブロック禁止、インラインstyleのみ
-
-出力形式:
-{"variations":[{"name":"パターン名","frontHtml":"<div style=\\"width:176px;height:291px\\">...</div>","backHtml":"<div style=\\"width:176px;height:291px\\">...</div>"}]}
-
 【表面必須要素】
 - 「クチコミ大募集」など訴求文（目立つサイズで）
-- 以下のQRコードSVGをそのまま含める
+- 以下のQRコード画像タグをそのままfrontHtml内に含める（変更禁止）:
+${qrImgTag}
 - 店舗名
-- 業種・テイストに合ったデザイン装飾（背景グラデーション・SVG装飾など）
-
-QRコード用SVG（このまま使うこと）:
-<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>
+- 業種・テイストに合ったデザイン装飾
 
 【裏面必須要素】店舗名（大）・キャッチコピー・住所・電話・感謝文・統一感ある装飾
 【品質】システムフォントのみ（Hiragino Mincho ProN, Yu Mincho, serif, sans-serif）、各パターンは明確に異なるデザイン方向性`;
@@ -654,9 +669,29 @@ async function generate(){
   if(!key){if(!accOpen)toggleAcc();showErr('APIキーを入力してください');return;}
   const shop=document.getElementById('shopName').value.trim();
   if(!shop){showErr('店舗名を入力してください');return;}
-  const prompt=buildPrompt();
-  setLoad(true,'AIがデザインを生成中... (30〜60秒)');
+
   document.getElementById('btnGen').disabled=true;clearErr();
+
+  // Step1: QRコード生成
+  const qrUrl=document.getElementById('qrUrl').value.trim();
+  let qrImgTag='';
+  const qrSize=gc('qrSizeChips')==='小さめ（控えめ）'?60:gc('qrSizeChips')==='大きめ（目立つ）'?100:80;
+
+  if(qrUrl){
+    setLoad(true,'QRコードを生成中...');
+    const dataUrl=await generateQRDataUrl(qrUrl,qrSize);
+    if(dataUrl){
+      qrImgTag=`<img src="${dataUrl}" width="${qrSize}" height="${qrSize}" style="display:block;image-rendering:pixelated;">`;
+    }
+  }
+  // URLなし or QR生成失敗時はダミーSVG
+  if(!qrImgTag){
+    qrImgTag=`<svg width="${qrSize}" height="${qrSize}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>`;
+  }
+
+  // Step2: AI生成
+  setLoad(true,'AIがデザインを生成中... (30〜60秒)');
+  const prompt=buildPrompt(qrImgTag);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -775,7 +810,7 @@ function clearErr(){document.getElementById('errArea').innerHTML='';}
 let promptOn=false;
 function togglePrompt(){
   promptOn=!promptOn;
-  if(promptOn)document.getElementById('prompttxt').textContent=buildPrompt();
+  if(promptOn)document.getElementById('prompttxt').textContent=buildPrompt('（QRコードはここに実際のbase64画像が入ります）');
   document.getElementById('promptbox').classList.toggle('on',promptOn);
 }
 </script>
