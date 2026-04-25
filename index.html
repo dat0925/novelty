@@ -4,410 +4,180 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ノベルティカード ジェネレーター | iFLAG</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    :root {
-      --bg: #f4f5f7;
-      --surface: #ffffff;
-      --surface2: #f0f1f4;
-      --border: #dde0e8;
-      --accent: #5b4ef0;
-      --accent2: #c47f00;
-      --text: #1a1a2e;
-      --text2: #6b7080;
-      --green: #1a8a3a;
-      --radius: 12px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Noto Sans JP', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ===== HEADER ===== */
-    header {
-      padding: 20px 40px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: var(--surface);
-    }
-    header .logo {
-      width: 36px; height: 36px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 700; color: #fff;
-    }
-    header h1 { font-size: 18px; font-weight: 500; }
-    header span { font-size: 12px; color: var(--text2); margin-left: 8px; }
-
-    /* ===== LAYOUT ===== */
-    .app {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      min-height: calc(100vh - 65px);
-    }
-
-    /* ===== LEFT PANEL ===== */
-    .panel {
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      padding: 32px 28px;
-    }
-
-    .section-label {
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      font-weight: 700;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section-label::before {
-      content: '';
-      width: 16px; height: 2px;
-      background: var(--accent);
-      border-radius: 2px;
-    }
-
-    .section {
-      margin-bottom: 32px;
-      padding-bottom: 32px;
-      border-bottom: 1px solid var(--border);
-    }
-    .section:last-child { border-bottom: none; }
-
-    /* API Key */
-    .api-key-row {
-      display: flex; gap: 8px; align-items: center;
-    }
-    .api-key-row input {
-      flex: 1;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: monospace;
-    }
-    .api-status {
-      font-size: 11px;
-      margin-top: 6px;
-      color: var(--text2);
-    }
-    .api-status.ok { color: var(--green); }
-
-    /* Form elements */
-    label {
-      display: block;
-      font-size: 12px;
-      color: var(--text2);
-      margin-bottom: 6px;
-      margin-top: 16px;
-    }
-    label:first-child { margin-top: 0; }
-
-    input[type="text"], textarea, select {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: 'Noto Sans JP', sans-serif;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus, textarea:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    select option { background: var(--surface); color: var(--text); }
-    textarea { resize: vertical; min-height: 72px; }
-
-    /* Chip selects */
-    .chips {
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
-    .chip {
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-      color: var(--text2);
-    }
-    .chip:hover { border-color: var(--accent); color: var(--text); }
-    .chip.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    /* Generate button */
-    .btn-generate {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      font-family: 'Noto Sans JP', sans-serif;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-      margin-top: 8px;
-    }
-    .btn-generate:hover { opacity: 0.85; }
-    .btn-generate:active { transform: scale(0.98); }
-    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .btn-secondary {
-      width: 100%;
-      padding: 11px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      font-size: 13px;
-      font-family: 'Noto Sans JP', sans-serif;
-      cursor: pointer;
-      transition: border-color 0.2s;
-      margin-top: 10px;
-    }
-    .btn-secondary:hover { border-color: var(--accent); }
-
-    /* ===== RIGHT PANEL ===== */
-    .preview-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-      gap: 24px;
-      background: var(--bg);
-    }
-
-    .preview-header {
-      width: 100%;
-      max-width: 700px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .preview-header h2 { font-size: 14px; color: var(--text2); font-weight: 400; }
-
-    /* Card preview */
-    .card-wrapper {
-      display: flex;
-      gap: 40px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .card-side { text-align: center; }
-    .card-side-label {
-      font-size: 11px;
-      color: var(--text2);
-      margin-bottom: 10px;
-      letter-spacing: 0.08em;
-    }
-
-    /* 名刺縦: 55mm × 91mm → preview scale: 55*3.2=176px × 91*3.2=291px */
-    .card {
-      width: 176px;
-      height: 291px;
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-      position: relative;
-      background: #fff;
-    }
-
-    /* Loading state */
-    .loading-overlay {
-      position: fixed; inset: 0;
-      background: rgba(244,245,247,0.88);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      gap: 16px;
-      display: none;
-    }
-    .loading-overlay.active { display: flex; }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 14px; color: var(--text2); }
-
-    /* Error / info */
-    .msg {
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-top: 12px;
-    }
-    .msg.error { background: #2d1414; color: #f87171; border: 1px solid #5a1f1f; }
-    .msg.info { background: #141d2d; color: #7ab3f8; border: 1px solid #1f3a5a; }
-
-    /* Prompt debug */
-    .prompt-box {
-      width: 100%;
-      max-width: 700px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      font-size: 12px;
-      color: var(--text2);
-      display: none;
-    }
-    .prompt-box.visible { display: block; }
-    .prompt-box pre {
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 8px;
-      line-height: 1.6;
-    }
-
-    /* PDF download btn */
-    .btn-pdf {
-      padding: 10px 24px;
-      border-radius: 8px;
-      border: 1px solid var(--accent2);
-      background: transparent;
-      color: var(--accent2);
-      font-size: 13px;
-      font-family: 'Noto Sans JP', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-pdf:hover { background: var(--accent2); color: #000; }
-    .btn-pdf:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    /* Empty state */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 400px;
-      gap: 16px;
-      color: var(--text2);
-    }
-    .empty-state .icon { font-size: 48px; opacity: 0.3; }
-    .empty-state p { font-size: 14px; }
-
-    /* Variation tabs */
-    .variations {
-      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-      width: 100%; max-width: 700px;
-    }
-    .var-btn {
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text2);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: 'Noto Sans JP', sans-serif;
-    }
-    .var-btn.active { border-color: var(--accent); color: var(--accent); }
-
-    @media (max-width: 768px) {
-      .app { grid-template-columns: 1fr; }
-      .panel { border-right: none; border-bottom: 1px solid var(--border); }
-    }
+    :root{--bg:#f4f5f7;--surface:#fff;--surface2:#f0f1f4;--border:#dde0e8;--accent:#5b4ef0;--accent2:#c47f00;--text:#1a1a2e;--text2:#6b7080;--green:#1a8a3a;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    #pwScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+    .pw-box{background:var(--surface);border-radius:16px;padding:40px;box-shadow:0 8px 40px rgba(0,0,0,.1);display:flex;flex-direction:column;align-items:center;gap:16px;width:320px;}
+    .pw-logo{width:48px;height:48px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;}
+    .pw-box h2{font-size:16px;font-weight:600;}
+    .pw-box p{font-size:12px;color:var(--text2);text-align:center;}
+    #pwInput{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:8px;font-size:22px;text-align:center;letter-spacing:.4em;font-family:monospace;background:var(--surface2);}
+    #pwInput:focus{outline:none;border-color:var(--accent);}
+    #pwBtn{width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+    #pwErr{font-size:12px;color:#e53e3e;display:none;}
+    header{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);}
+    header .logo{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;}
+    header h1{font-size:15px;font-weight:600;}
+    header span{font-size:11px;color:var(--text2);margin-left:6px;}
+    .app{display:grid;grid-template-columns:440px 1fr;min-height:calc(100vh - 53px);}
+    .panel{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:20px 22px 40px;}
+    .section-label{font-size:11px;letter-spacing:.1em;color:var(--accent);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+    .section-label::before{content:'';width:14px;height:2px;background:var(--accent);border-radius:2px;}
+    .section{margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+    .section:last-child{border-bottom:none;}
+    label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;margin-top:13px;}
+    label:first-child{margin-top:0;}
+    input[type=text],input[type=password],textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;transition:border-color .2s;}
+    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);}
+    textarea{resize:vertical;min-height:60px;}
+    select option{background:var(--surface);color:var(--text);}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;}
+    .chip{padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);font-size:12px;cursor:pointer;transition:all .15s;color:var(--text2);font-family:'Noto Sans JP',sans-serif;}
+    .chip:hover{border-color:var(--accent);color:var(--text);}
+    .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .acc-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none;}
+    .acc-arrow{font-size:11px;color:var(--text2);transition:transform .2s;}
+    .acc-header.open .acc-arrow{transform:rotate(180deg);}
+    .acc-body{overflow:hidden;max-height:0;transition:max-height .3s ease;}
+    .acc-body.open{max-height:300px;}
+    .zip-row{display:flex;gap:8px;align-items:center;}
+    .zip-row input{width:130px;flex:none;}
+    .btn-zip{padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans JP',sans-serif;color:var(--text);transition:border-color .2s;}
+    .btn-zip:hover{border-color:var(--accent);}
+    .cat2-area{margin-top:10px;display:none;}
+    .cat2-area.visible{display:block;}
+    .cat-other{margin-top:8px;display:none;}
+    .cat-other.visible{display:block;}
+    .btn-generate{width:100%;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:opacity .2s;margin-top:8px;}
+    .btn-generate:hover{opacity:.85;}
+    .btn-generate:disabled{opacity:.4;cursor:not-allowed;}
+    .btn-sub{width:100%;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:border-color .2s;margin-top:8px;}
+    .btn-sub:hover{border-color:var(--accent);}
+    .preview-area{display:flex;flex-direction:column;align-items:center;padding:28px;gap:18px;}
+    .preview-header{width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+    .preview-header h2{font-size:13px;color:var(--text2);font-weight:400;}
+    .export-btns{display:flex;gap:8px;flex-wrap:wrap;}
+    .btn-export{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:all .2s;color:var(--text2);}
+    .btn-export:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2);}
+    .btn-export.ai:hover:not(:disabled){border-color:#d946a8;color:#d946a8;}
+    .btn-export:disabled{opacity:.3;cursor:not-allowed;}
+    .card-wrapper{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+    .card-side{text-align:center;}
+    .card-side-label{font-size:11px;color:var(--text2);margin-bottom:8px;}
+    .card{width:176px;height:291px;border-radius:4px;overflow:hidden;box-shadow:0 6px 22px rgba(0,0,0,.11);background:#fff;}
+    .variations{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;width:100%;max-width:720px;}
+    .var-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Noto Sans JP',sans-serif;}
+    .var-btn.active{border-color:var(--accent);color:var(--accent);background:#ede9ff;}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:340px;gap:12px;color:var(--text2);}
+    .empty-state .icon{font-size:42px;opacity:.25;}
+    .loading-overlay{position:fixed;inset:0;background:rgba(244,245,247,.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:14px;}
+    .loading-overlay.active{display:flex;}
+    .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-text{font-size:14px;color:var(--text2);}
+    .msg{padding:10px 13px;border-radius:8px;font-size:13px;margin-top:10px;}
+    .msg.error{background:#fff0f0;color:#c53030;border:1px solid #fed7d7;}
+    .prompt-box{width:100%;max-width:720px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px;font-size:12px;color:var(--text2);display:none;}
+    .prompt-box.visible{display:block;}
+    .prompt-box pre{white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto;margin-top:6px;line-height:1.6;}
+    @media(max-width:768px){.app{grid-template-columns:1fr;}.panel{border-right:none;border-bottom:1px solid var(--border);}}
   </style>
 </head>
 <body>
-
+<div id="pwScreen">
+  <div class="pw-box">
+    <div class="pw-logo">N</div>
+    <h2>ノベルティ ジェネレーター</h2>
+    <p>アクセスにはパスワードが必要です</p>
+    <input type="password" id="pwInput" placeholder="••••" maxlength="8" autofocus>
+    <button id="pwBtn" onclick="checkPw()">ログイン</button>
+    <span id="pwErr">パスワードが正しくありません</span>
+  </div>
+</div>
 <header>
   <div class="logo">N</div>
   <h1>ノベルティカード ジェネレーター</h1>
   <span>MEOサービス用 口コミ募集カード</span>
 </header>
-
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
   <div class="loading-text" id="loadingText">AIがデザインを生成中...</div>
 </div>
-
 <div class="app">
-  <!-- LEFT: FORM -->
   <div class="panel">
-
-    <!-- API Key -->
     <div class="section">
-      <div class="section-label">Claude API キー</div>
-      <div class="api-key-row">
-        <input type="password" id="apiKey" placeholder="sk-ant-api..." autocomplete="off">
+      <div class="acc-header" id="apiHead" onclick="toggleAcc('apiBody','apiHead')">
+        <div class="section-label" style="margin:0">Claude API キー</div>
+        <span class="acc-arrow">▼</span>
       </div>
-      <div class="api-status" id="apiStatus">APIキーを入力してください</div>
+      <div class="acc-body" id="apiBody">
+        <div style="padding-top:10px">
+          <input type="password" id="apiKey" placeholder="sk-ant-api..." autocomplete="off">
+          <div id="apiStatus" style="font-size:11px;margin-top:5px;color:var(--text2)">APIキーを入力してください</div>
+        </div>
+      </div>
     </div>
-
-    <!-- 店舗基本情報 -->
     <div class="section">
       <div class="section-label">店舗情報</div>
-
-      <label>業種</label>
-      <div class="chips" id="categoryChips">
-        <div class="chip active" data-val="美容室・ヘアサロン">美容室</div>
-        <div class="chip" data-val="エステ・マッサージ">エステ</div>
-        <div class="chip" data-val="飲食店・レストラン">飲食店</div>
-        <div class="chip" data-val="カフェ">カフェ</div>
-        <div class="chip" data-val="整骨院・整体">整骨院</div>
-        <div class="chip" data-val="歯科医院">歯科</div>
+      <label>業種（大分類）</label>
+      <div class="chips" id="cat1">
+        <div class="chip active" data-val="美容・健康">美容・健康</div>
+        <div class="chip" data-val="飲食">飲食</div>
+        <div class="chip" data-val="医療・介護">医療・介護</div>
+        <div class="chip" data-val="教育">教育</div>
+        <div class="chip" data-val="住宅・建設">住宅・建設</div>
+        <div class="chip" data-val="小売">小売</div>
+        <div class="chip" data-val="サービス業">サービス業</div>
         <div class="chip" data-val="その他">その他</div>
       </div>
-
+      <div class="cat2-area" id="cat2Area">
+        <label>業種（中分類）</label>
+        <div class="chips" id="cat2"></div>
+      </div>
+      <div class="cat-other" id="catOtherWrap">
+        <label>業種（自由入力）</label>
+        <input type="text" id="catOther" placeholder="例：ペットサロン、フォトスタジオ など">
+      </div>
       <label>店舗名</label>
       <input type="text" id="shopName" placeholder="例：Hair Salon Refre">
-
       <label>キャッチコピー（任意）</label>
       <input type="text" id="catchcopy" placeholder="例：髪と心をリフレッシュ">
-
-      <label>住所（短縮）</label>
-      <input type="text" id="address" placeholder="例：大阪市中央区XXX 2-1-1">
-
+      <label>店舗の特徴・アピール（任意）</label>
+      <textarea id="shopAppeal" placeholder="例：創業20年、個室完備、駐車場あり、女性スタッフのみ など"></textarea>
+      <label>郵便番号</label>
+      <div class="zip-row">
+        <input type="text" id="zipCode" placeholder="例：5300001" maxlength="8">
+        <button class="btn-zip" onclick="lookupZip()">住所を自動入力</button>
+      </div>
+      <label>都道府県</label>
+      <select id="pref">
+        <option value="">選択</option>
+        <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option>
+        <option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option>
+        <option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option>
+        <option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option>
+        <option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option>
+        <option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
+        <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+        <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option>
+        <option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option>
+        <option>鹿児島県</option><option>沖縄県</option>
+      </select>
+      <label>市区町村・番地</label>
+      <input type="text" id="addr1" placeholder="例：中央区○○町 2-1-1">
+      <label>ビル名・部屋番号（任意）</label>
+      <input type="text" id="addr2" placeholder="例：○○ビル 3F">
       <label>電話番号</label>
       <input type="text" id="tel" placeholder="例：06-1234-5678">
-
       <label>QRコード先URL（任意）</label>
-      <input type="text" id="qrUrl" placeholder="例：https://goo.gl/maps/...">
+      <input type="text" id="qrUrl" placeholder="例：https://g.page/r/...">
     </div>
-
-    <!-- デザイン -->
     <div class="section">
       <div class="section-label">デザイン設定</div>
-
       <label>雰囲気・テイスト</label>
       <div class="chips" id="styleChips">
         <div class="chip active" data-val="高級感・洗練">高級感</div>
@@ -415,9 +185,9 @@
         <div class="chip" data-val="ポップ・かわいい">ポップ</div>
         <div class="chip" data-val="シンプル・清潔感">シンプル</div>
         <div class="chip" data-val="和風・モダン">和風</div>
-        <div class="chip" data-val="スポーティ・力強い">スポーティ</div>
+        <div class="chip" data-val="スポーティ・爽快">スポーティ</div>
+        <div class="chip" data-val="プロフェッショナル・信頼感">プロ・信頼</div>
       </div>
-
       <label>メインカラー</label>
       <div class="chips" id="colorChips">
         <div class="chip active" data-val="ゴールド×ダークグリーン">ゴールド×DK緑</div>
@@ -426,470 +196,328 @@
         <div class="chip" data-val="ブラック×ピンクゴールド">黒×ピンク金</div>
         <div class="chip" data-val="ラベンダー×ライトグレー">ラベンダー</div>
         <div class="chip" data-val="ホワイト×レッド">白×赤</div>
+        <div class="chip" data-val="スカイブルー×ホワイト">ブルー×白</div>
+        <div class="chip" data-val="ブラウン×クリーム">ブラウン系</div>
       </div>
-
       <label>バリエーション数</label>
       <div class="chips" id="varChips">
         <div class="chip" data-val="1">1種</div>
         <div class="chip active" data-val="3">3種</div>
         <div class="chip" data-val="6">6種</div>
       </div>
-
       <label>その他ご要望（自由記述）</label>
-      <textarea id="freetext" placeholder="例：桜のイラストを入れてほしい、QRコードを大きく、英語表記も入れて など"></textarea>
+      <textarea id="freetext" placeholder="例：桜のイラストを入れてほしい、定休日を記載、英語表記も入れて など"></textarea>
     </div>
-
-    <button class="btn-generate" id="btnGenerate" onclick="generateDesign()">
-      ✨ AIでデザイン生成
-    </button>
-    <button class="btn-secondary" onclick="togglePrompt()">プロンプト確認</button>
-
+    <button class="btn-generate" id="btnGenerate" onclick="generateDesign()">✨ AIでデザイン生成</button>
+    <button class="btn-sub" onclick="togglePrompt()">プロンプト確認</button>
     <div id="errorMsg"></div>
   </div>
-
-  <!-- RIGHT: PREVIEW -->
   <div class="preview-area">
     <div class="preview-header">
       <h2>プレビュー（実寸比：55×91mm）</h2>
-      <button class="btn-pdf" id="btnPdf" onclick="downloadPDF()" disabled>📄 印刷用PDF保存</button>
+      <div class="export-btns">
+        <button class="btn-export" id="btnPdf" onclick="downloadPDF()" disabled>📄 PDF保存</button>
+        <button class="btn-export ai" id="btnAi" onclick="downloadAI()" disabled>🎨 .ai形式保存</button>
+      </div>
     </div>
-
     <div class="variations" id="variations"></div>
-
     <div class="card-wrapper" id="cardWrapper">
       <div class="empty-state">
         <div class="icon">🎴</div>
         <p>フォームを入力して「AIでデザイン生成」を押してください</p>
       </div>
     </div>
-
     <div class="prompt-box" id="promptBox">
-      <strong style="color:var(--text)">送信プロンプト</strong>
+      <strong style="color:var(--text)">プロンプト / デバッグ情報</strong>
       <pre id="promptText"></pre>
     </div>
   </div>
 </div>
-
 <script>
-// ===== CHIP SINGLE SELECT =====
-document.querySelectorAll('.chips').forEach(group => {
-  group.addEventListener('click', e => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    group.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-  });
-});
-
-function getChip(id) {
-  const el = document.querySelector(`#${id} .chip.active`);
-  return el ? el.dataset.val : '';
+// PASSWORD
+(function(){
+  if(sessionStorage.getItem('nv_auth')==='1')document.getElementById('pwScreen').style.display='none';
+  document.getElementById('pwInput').addEventListener('keydown',function(e){if(e.key==='Enter')checkPw();});
+})();
+function checkPw(){
+  if(document.getElementById('pwInput').value==='2759'){
+    sessionStorage.setItem('nv_auth','1');
+    document.getElementById('pwScreen').style.display='none';
+  } else {
+    document.getElementById('pwErr').style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
 }
 
-// API Key status
-document.getElementById('apiKey').addEventListener('input', e => {
-  const v = e.target.value.trim();
-  const s = document.getElementById('apiStatus');
-  if (v.startsWith('sk-ant-')) {
-    s.textContent = '✓ キー形式OK（未検証）'; s.className = 'api-status ok';
-  } else if (v) {
-    s.textContent = '⚠ 形式が正しくない可能性があります'; s.className = 'api-status';
-  } else {
-    s.textContent = 'APIキーを入力してください'; s.className = 'api-status';
-  }
-  // save to session
-  sessionStorage.setItem('nv_apikey', v);
+// ACCORDION
+function toggleAcc(bodyId,headId){
+  document.getElementById(bodyId).classList.toggle('open');
+  document.getElementById(headId).classList.toggle('open');
+}
+
+// CATEGORY MAP
+var CAT_MAP={
+  '美容・健康':['美容室・ヘアサロン','ネイルサロン','エステ・フェイシャル','リラクゼーション・マッサージ','整骨院・整体','アイラッシュ・眉毛サロン','パーソナルトレーニング','ヨガ・ピラティス','その他（自由入力）'],
+  '飲食':['和食レストラン','イタリアン・パスタ','フレンチ','中華料理','焼肉・ステーキ','ラーメン・麺類','寿司・海鮮','居酒屋・ダイニングバー','カフェ・喫茶','スイーツ・パティスリー','テイクアウト専門','その他（自由入力）'],
+  '医療・介護':['歯科医院','内科・クリニック','皮膚科','眼科','接骨院','薬局・調剤','介護施設・デイサービス','その他（自由入力）'],
+  '教育':['学習塾・進学塾','英会話スクール','そろばん教室','ピアノ・音楽教室','プログラミング教室','体操・スポーツ教室','幼児教育・保育','その他（自由入力）'],
+  '住宅・建設':['工務店・リフォーム','不動産','インテリア・家具','エクステリア・外構','その他（自由入力）'],
+  '小売':['アパレル・ファッション','食品・総菜・食料品','雑貨・生活用品','フラワーショップ','ペットショップ','書店・文具','その他（自由入力）'],
+  'サービス業':['ホテル・旅館','フォトスタジオ','レンタカー','クリーニング','葬儀社','士業・コンサルタント','その他（自由入力）'],
+  'その他':['その他（自由入力）']
+};
+
+function buildCat2(cat1){
+  var items=CAT_MAP[cat1]||[];
+  var area=document.getElementById('cat2Area');
+  var chips=document.getElementById('cat2');
+  var otherWrap=document.getElementById('catOtherWrap');
+  chips.innerHTML='';
+  items.forEach(function(v,i){
+    var c=document.createElement('div');
+    c.className='chip'+(i===0?' active':'');
+    c.dataset.val=v;
+    c.textContent=v.replace('（自由入力）','').replace('その他','その他');
+    c.addEventListener('click',function(){
+      chips.querySelectorAll('.chip').forEach(function(x){x.classList.remove('active');});
+      c.classList.add('active');
+      otherWrap.classList.toggle('visible',v.indexOf('自由入力')>=0);
+    });
+    chips.appendChild(c);
+  });
+  area.classList.add('visible');
+  otherWrap.classList.toggle('visible', items.length>0&&items[0].indexOf('自由入力')>=0);
+}
+buildCat2('美容・健康');
+document.getElementById('cat1').addEventListener('click',function(e){
+  var c=e.target.closest('.chip');if(!c)return;
+  document.querySelectorAll('#cat1 .chip').forEach(function(x){x.classList.remove('active');});
+  c.classList.add('active');
+  buildCat2(c.dataset.val);
 });
-// restore
-const saved = sessionStorage.getItem('nv_apikey');
-if (saved) { document.getElementById('apiKey').value = saved; document.getElementById('apiKey').dispatchEvent(new Event('input')); }
 
-// ===== PROMPT BUILDER =====
-function buildPrompt() {
-  const shopName = document.getElementById('shopName').value || '（店舗名未入力）';
-  const catchcopy = document.getElementById('catchcopy').value;
-  const address = document.getElementById('address').value;
-  const tel = document.getElementById('tel').value;
-  const qrUrl = document.getElementById('qrUrl').value;
-  const category = getChip('categoryChips');
-  const style = getChip('styleChips');
-  const color = getChip('colorChips');
-  const varCount = parseInt(getChip('varChips')) || 3;
-  const freetext = document.getElementById('freetext').value;
+function getCat(){
+  var c2=document.querySelector('#cat2 .chip.active');
+  var c2val=c2?c2.dataset.val:'';
+  var other=document.getElementById('catOther').value.trim();
+  if(c2val.indexOf('自由入力')>=0&&other)return other;
+  if(c2val&&c2val.indexOf('自由入力')<0)return c2val;
+  var c1=document.querySelector('#cat1 .chip.active');
+  return c1?c1.dataset.val:'';
+}
 
+// CHIP SELECT
+['styleChips','colorChips','varChips'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){
+    var c=e.target.closest('.chip');if(!c)return;
+    document.querySelectorAll('#'+id+' .chip').forEach(function(x){x.classList.remove('active');});
+    c.classList.add('active');
+  });
+});
+function getChip(id){var el=document.querySelector('#'+id+' .chip.active');return el?el.dataset.val:'';}
+
+// API KEY
+document.getElementById('apiKey').addEventListener('input',function(e){
+  var v=e.target.value.trim();
+  var s=document.getElementById('apiStatus');
+  if(v.indexOf('sk-ant-')===0){s.textContent='✓ キー形式OK';s.style.color='var(--green)';}
+  else if(v){s.textContent='⚠ 形式が正しくない可能性あり';s.style.color='orange';}
+  else{s.textContent='APIキーを入力してください';s.style.color='var(--text2)';}
+  sessionStorage.setItem('nv_key',v);
+});
+var sk=sessionStorage.getItem('nv_key');
+if(sk){document.getElementById('apiKey').value=sk;document.getElementById('apiKey').dispatchEvent(new Event('input'));}
+
+// ZIP LOOKUP
+async function lookupZip(){
+  var zip=document.getElementById('zipCode').value.replace(/[^0-9]/g,'');
+  if(zip.length<7){alert('郵便番号を7桁で入力してください');return;}
+  try{
+    var r=await fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode='+zip);
+    var d=await r.json();
+    if(d.results&&d.results[0]){
+      var row=d.results[0];
+      var sel=document.getElementById('pref');
+      for(var i=0;i<sel.options.length;i++){if(sel.options[i].text===row.address1){sel.selectedIndex=i;break;}}
+      document.getElementById('addr1').value=row.address2+row.address3;
+    } else {alert('住所が見つかりませんでした');}
+  }catch(e){alert('住所検索に失敗しました');}
+}
+
+// FORM DATA
+function getFormData(){
   return {
-    shopName, catchcopy, address, tel, qrUrl,
-    category, style, color, varCount, freetext
+    category:getCat(),
+    shopName:document.getElementById('shopName').value||'（未入力）',
+    catchcopy:document.getElementById('catchcopy').value,
+    shopAppeal:document.getElementById('shopAppeal').value,
+    address:[document.getElementById('pref').value,document.getElementById('addr1').value,document.getElementById('addr2').value].filter(Boolean).join(' '),
+    tel:document.getElementById('tel').value,
+    qrUrl:document.getElementById('qrUrl').value,
+    style:getChip('styleChips'),
+    color:getChip('colorChips'),
+    varCount:parseInt(getChip('varChips'))||3,
+    freetext:document.getElementById('freetext').value
   };
 }
 
-function buildAPIPrompt(data) {
-  return `あなたはプロのグラフィックデザイナーです。
-店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを${data.varCount}パターン生成してください。
+var QR_SVG='<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>';
 
-【カード仕様】
-- サイズ: 名刺縦型 55mm × 91mm（表・裏の2面セット）
-- 用途: 店舗がお客様にGoogleクチコミ投稿をお願いするカード
-- 印刷: 後でPDF化して印刷会社に入稿する
-
-【店舗情報】
-- 業種: ${data.category}
-- 店舗名: ${data.shopName}
-${data.catchcopy ? `- キャッチコピー: ${data.catchcopy}` : ''}
-${data.address ? `- 住所: ${data.address}` : ''}
-${data.tel ? `- 電話: ${data.tel}` : ''}
-${data.qrUrl ? `- QRコードURL: ${data.qrUrl}` : ''}
-
-【デザイン指定】
-- テイスト: ${data.style}
-- カラー: ${data.color}
-${data.freetext ? `- その他要望: ${data.freetext}` : ''}
-
-【出力形式 - 厳守】
-以下のJSON形式で${data.varCount}パターンを出力してください。
-
-重要なルール：
-1. HTMLの属性値は必ずダブルクォートを使用してください（例: style="color:red" ← 正しい、style='color:red' ← NG）
-2. HTML内でダブルクォートが必要な場合は &quot; に置き換えてください
-3. JSON文字列内にバックスラッシュや制御文字を入れないでください
-4. frontHtml と backHtml の値はJSON文字列として有効である必要があります
-
-出力例：
-{"variations":[{"name":"エレガントゴールド","frontHtml":"<div style=\\"width:176px;height:291px;background:linear-gradient(180deg,#1a2f23,#0d1a14);\\"><p style=\\"color:#c9a84c;\\">クチコミ大募集</p></div>","backHtml":"<div style=\\"width:176px;height:291px;\\"><p>店舗名</p></div>"}]}
-
-【表面の必須要素】
-- 「クチコミ大募集」または同等の訴求文（目立つサイズで）
-- QRコードエリア（下記SVGをそのまま使用してください）
-- 店舗名
-- デザイン装飾（業種・テイストに合ったSVG装飾、背景グラデーション等）
-
-QRコード用SVG（このまま使用）:
-<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>
-
-【裏面の必須要素】
-- 店舗名（大きく）
-- キャッチコピー（ある場合）
-- 住所・電話番号
-- 「ご来店ありがとうございました」等の感謝文
-- デザイン装飾（表面と統一感のあるデザイン）
-
-【デザイン品質基準】
-- 業種・テイストに合った配色（インラインstyleのみ使用、classやCSSブロック禁止）
-- 各パターンは明確に異なるデザイン方向性
-- 文字は全て日本語、視認性重視
-- font-familyはシステムフォントのみ（Hiragino Mincho ProN, Yu Mincho, serif など）
-
-JSON以外は絶対に出力しないでください。最初の文字は { で始めてください。`;
+function buildPrompt(d){
+  return 'あなたはプロのグラフィックデザイナーです。\n店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを'+d.varCount+'パターン生成してください。\n\n【カード仕様】名刺縦型 55mm×91mm、表・裏の2面セット\n\n【店舗情報】\n業種: '+d.category+'\n店舗名: '+d.shopName+(d.catchcopy?'\nキャッチコピー: '+d.catchcopy:'')+(d.shopAppeal?'\n特徴: '+d.shopAppeal:'')+(d.address?'\n住所: '+d.address:'')+(d.tel?'\n電話: '+d.tel:'')+(d.qrUrl?'\nQR先URL: '+d.qrUrl:'')+'\n\n【デザイン】テイスト: '+d.style+' / カラー: '+d.color+(d.freetext?'\n要望: '+d.freetext:'')+'\n\n【出力ルール - 厳守】\n1. HTML属性はダブルクォートのみ (style="..." のみOK、シングルクォートNG)\n2. JSON文字列内のダブルクォートは \\\\" でエスケープ\n3. 出力は { から始まり } で終わること\n4. インラインstyleのみ(classやCSSブロック禁止)\n5. font-familyはシステムフォント(Hiragino Mincho ProN, Yu Mincho, serif等)のみ\n\n【表面の必須要素】\n- 「クチコミ大募集」訴求文(目立つサイズ)\n- 下記QRコードSVGをそのまま埋め込む\n- 店舗名\n- 業種・テイストに合った高品質な装飾\n\nQRコード用SVG(そのまま使う):\n'+QR_SVG+'\n\n【裏面の必須要素】\n店舗名(大きく) / キャッチコピー / 住所・電話番号 / 感謝文 / 表面と統一感のある装飾\n\n出力はJSONのみ。最初の文字は { で始めること。';
 }
 
-// ===== GENERATE =====
-let currentVariations = [];
-let currentVarIndex = 0;
+// GENERATE
+var variations=[],varIndex=0;
 
-async function generateDesign() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { showError('APIキーを入力してください'); return; }
-
-  const data = buildPrompt();
-  if (!data.shopName || data.shopName === '（店舗名未入力）') {
-    showError('店舗名を入力してください'); return;
-  }
-
-  const prompt = buildAPIPrompt(data);
-  document.getElementById('promptText').textContent = prompt;
+async function generateDesign(){
+  var apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){showErr('APIキーを入力してください');return;}
+  var d=getFormData();
+  if(d.shopName==='（未入力）'){showErr('店舗名を入力してください');return;}
+  var prompt=buildPrompt(d);
+  document.getElementById('promptText').textContent=prompt;
   document.getElementById('promptBox').classList.add('visible');
-  promptVisible = true;
-
-  showLoading(true, 'AIがデザインを生成中...');
-  document.getElementById('btnGenerate').disabled = true;
-  clearError();
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 8000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+  showLoad(true,'AIがデザインを生成中...');
+  document.getElementById('btnGenerate').disabled=true;
+  clearErr();
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || `API error: ${res.status}`);
-    }
-
-    const result = await res.json();
-    const text = result.content.map(b => b.text || '').join('');
-
-    // Extract JSON - 複数のフォールバック戦略
-    let parsed;
-    let rawText = text;
-    try {
-      let jsonStr = '';
-
-      // Strategy 1: ```json ... ``` ブロック
-      const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1];
-      } else {
-        // Strategy 2: ``` ... ``` ブロック
-        const codeMatch = text.match(/```\s*([\s\S]*?)```/s);
-        if (codeMatch) {
-          jsonStr = codeMatch[1];
-        } else {
-          // Strategy 3: { から } まで切り出す
-          const start = text.indexOf('{');
-          const end = text.lastIndexOf('}');
-          if (start !== -1 && end !== -1) {
-            jsonStr = text.slice(start, end + 1);
-          } else {
-            throw new Error('JSON_NOT_FOUND');
-          }
-        }
-      }
-
-      // まずそのままパース試みる
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch(e1) {
-        // 失敗したらJSON修復を試みる
-        // HTML属性のシングルクォートをダブルクォートに変換する修復は複雑なので
-        // 代わりに: frontHtml/backHtml の値部分だけ抽出するアプローチ
-        const variations = [];
-        const nameRe = /"name"\s*:\s*"([^"]+)"/g;
-        const frontRe = /"frontHtml"\s*:\s*"([\s\S]*?)(?<!\\)",\s*"backHtml"/g;
-        const backRe = /"backHtml"\s*:\s*"([\s\S]*?)(?<!\\)"\s*\}/g;
-
-        // より単純な方法: 各バリエーションブロックを個別に処理
-        const varBlocks = jsonStr.split(/\},\s*\{/);
-        for (const block of varBlocks) {
-          const cleanBlock = block.replace(/^\s*[\[{]*/, '').replace(/[\]}]*\s*$/, '');
-          const nameM = cleanBlock.match(/"name"\s*:\s*"([^"]+)"/);
-
-          // frontHtml と backHtml を貪欲でなく取得
-          // style='...' のシングルクォートをダブルクォートに置換してからパース
-          let repaired = cleanBlock
-            .replace(/style='([^']*?)'/g, (m, p1) => `style="${p1}"`)
-            .replace(/(['"])\s*:\s*'([\s\S]*?)'\s*([,}])/g, '$1: "$2"$3');
-
-          try {
-            const obj = JSON.parse(`{${repaired}}`);
-            if (obj.name && (obj.frontHtml || obj.backHtml)) {
-              variations.push(obj);
-            }
-          } catch(e2) {
-            // このブロックはスキップ
-            console.warn('Block parse failed:', repaired.slice(0, 100));
-          }
-        }
-
-        if (variations.length > 0) {
-          parsed = { variations };
-        } else {
-          throw new Error('REPAIR_FAILED');
-        }
-      }
-    } catch(parseErr) {
-      document.getElementById('promptText').textContent =
-        '=== AIの生レスポンス（デバッグ用）===\n\n' + rawText;
-      document.getElementById('promptBox').classList.add('visible');
-      promptVisible = true;
+    if(!res.ok){var e=await res.json().catch(function(){return {};});throw new Error(e.error&&e.error.message?e.error.message:'API '+res.status);}
+    var result=await res.json();
+    var text=result.content.map(function(b){return b.text||'';}).join('');
+    var parsed=parseJSON(text);
+    if(!parsed){
+      document.getElementById('promptText').textContent='=== 生レスポンス（デバッグ） ===\n\n'+text;
       throw new Error('JSONパース失敗。「プロンプト確認」欄に生レスポンスを表示しました。もう一度お試しください。');
     }
-    currentVariations = parsed.variations || [];
-    if (!currentVariations.length) throw new Error('バリエーションが空です');
-
-    renderVariations();
+    variations=parsed.variations||[];
+    if(!variations.length)throw new Error('バリエーションが空です');
+    renderVars();
     renderCard(0);
-    document.getElementById('btnPdf').disabled = false;
-
-  } catch (e) {
-    showError('エラー: ' + e.message);
-    console.error(e);
-  } finally {
-    showLoading(false);
-    document.getElementById('btnGenerate').disabled = false;
-  }
+    document.getElementById('btnPdf').disabled=false;
+    document.getElementById('btnAi').disabled=false;
+  }catch(e){showErr('エラー: '+e.message);}
+  finally{showLoad(false);document.getElementById('btnGenerate').disabled=false;}
 }
 
-function renderVariations() {
-  const el = document.getElementById('variations');
-  el.innerHTML = '';
-  currentVariations.forEach((v, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'var-btn' + (i === 0 ? ' active' : '');
-    btn.textContent = v.name || `パターン ${i+1}`;
-    btn.onclick = () => {
-      document.querySelectorAll('.var-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderCard(i);
+function parseJSON(text){
+  var tries=[];
+  var m1=text.match(/```json\s*([\s\S]*?)```/);if(m1)tries.push(m1[1]);
+  var m2=text.match(/```\s*([\s\S]*?)```/);if(m2)tries.push(m2[1]);
+  var s=text.indexOf('{'),e=text.lastIndexOf('}');
+  if(s!==-1&&e!==-1)tries.push(text.slice(s,e+1));
+  for(var i=0;i<tries.length;i++){
+    var t=tries[i];
+    try{var p=JSON.parse(t);if(p.variations)return p;}catch(err){}
+    try{var p2=JSON.parse(t.replace(/:\s*'([\s\S]*?)'/g,': "$1"'));if(p2.variations)return p2;}catch(err){}
+  }
+  return null;
+}
+
+function renderVars(){
+  var el=document.getElementById('variations');el.innerHTML='';
+  variations.forEach(function(v,i){
+    var btn=document.createElement('button');
+    btn.className='var-btn'+(i===0?' active':'');
+    btn.textContent=v.name||('パターン'+(i+1));
+    btn.onclick=function(){
+      document.querySelectorAll('.var-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');renderCard(i);
     };
     el.appendChild(btn);
   });
 }
 
-function renderCard(index) {
-  currentVarIndex = index;
-  const v = currentVariations[index];
-  if (!v) return;
-
-  document.getElementById('cardWrapper').innerHTML = `
-    <div class="card-side">
-      <div class="card-side-label">表面</div>
-      <div class="card">${v.frontHtml}</div>
-    </div>
-    <div class="card-side">
-      <div class="card-side-label">裏面</div>
-      <div class="card">${v.backHtml}</div>
-    </div>
-  `;
+function renderCard(i){
+  varIndex=i;var v=variations[i];if(!v)return;
+  document.getElementById('cardWrapper').innerHTML='<div class="card-side"><div class="card-side-label">表面</div><div class="card">'+(v.frontHtml||'')+'</div></div><div class="card-side"><div class="card-side-label">裏面</div><div class="card">'+(v.backHtml||'')+'</div></div>';
 }
 
-// ===== PDF DOWNLOAD =====
-async function downloadPDF() {
-  if (!currentVariations.length) return;
-  showLoading(true, 'PDFを生成中...');
-
-  try {
-    const { jsPDF } = window.jspdf;
-
-    // 名刺縦: 55mm × 91mm
-    const W = 55, H = 91;
-
-    for (let vi = 0; vi < currentVariations.length; vi++) {
-      const v = currentVariations[vi];
-      const pdf = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
-
-      // Front page
-      pdf.html(createPDFElement(v.frontHtml), {
-        callback: function(doc) {},
-        x: 0, y: 0,
-        html2canvas: { scale: 96/25.4 * (W/176) },
-        width: W,
-        windowWidth: 176
-      });
-
-      // This approach uses html rendering - fallback to simple colored page with text
-      // For production, use html2canvas library
-      pdf.save(`novelty_${vi+1}_${v.name || 'card'}.pdf`);
-    }
-
-    // Better approach: generate each card as a scaled HTML screenshot
-    await generatePDFWithCanvas();
-
-  } catch(e) {
-    showError('PDF生成エラー: ' + e.message);
-    console.error(e);
-  } finally {
-    showLoading(false);
-  }
-}
-
-async function generatePDFWithCanvas() {
-  // Load html2canvas dynamically
-  if (!window.html2canvas) {
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-  }
-  const { jsPDF } = window.jspdf;
-
-  // PDF: A4 横, 複数カードを並べる
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-
-  const cardW = 55, cardH = 91;
-  const marginX = 10, marginY = 10, gap = 5;
-
-  let curX = marginX, curY = marginY;
-  let pageAdded = false;
-
-  for (let vi = 0; vi < currentVariations.length; vi++) {
-    const v = currentVariations[vi];
-
-    for (const side of ['frontHtml', 'backHtml']) {
-      // Check if we need new row/page
-      if (curX + cardW > 297 - marginX) {
-        curX = marginX;
-        curY += cardH + gap + 6;
-      }
-      if (curY + cardH > 210 - marginY) {
-        pdf.addPage();
-        curX = marginX; curY = marginY;
-      }
-
-      // Render to off-screen div
-      const div = document.createElement('div');
-      div.style.cssText = `position:fixed;left:-9999px;top:0;width:176px;height:291px;overflow:hidden;`;
-      div.innerHTML = v[side];
-      document.body.appendChild(div);
-
-      try {
-        const canvas = await html2canvas(div, { scale: 2, useCORS: true, logging: false });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', curX, curY, cardW, cardH);
-
-        // Label
-        pdf.setFontSize(4);
-        pdf.setTextColor(120);
-        pdf.text(`${v.name || `P${vi+1}`} ${side === 'frontHtml' ? '表' : '裏'}`, curX + 1, curY + cardH + 3);
-
-        curX += cardW + gap;
-      } finally {
-        document.body.removeChild(div);
+// PDF
+async function downloadPDF(){
+  if(!variations.length)return;
+  showLoad(true,'PDFを生成中...');
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    var jsPDF=window.jspdf.jsPDF;
+    var pdf=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+    var cW=55,cH=91,mX=10,mY=15,gap=6,lH=5,cx=mX,cy=mY;
+    for(var vi=0;vi<variations.length;vi++){
+      var v=variations[vi];
+      var sides=[['表面',v.frontHtml],['裏面',v.backHtml]];
+      for(var si=0;si<sides.length;si++){
+        var side=sides[si][0],html=sides[si][1];
+        if(cx+cW>297-mX){cx=mX;cy+=cH+gap+lH;}
+        if(cy+cH>210-mY){pdf.addPage('a4','landscape');cx=mX;cy=mY;}
+        var div=document.createElement('div');
+        div.style.cssText='position:fixed;left:-9999px;top:0;width:176px;height:291px;overflow:hidden;background:#fff;';
+        div.innerHTML=html;document.body.appendChild(div);
+        try{
+          var canvas=await html2canvas(div,{scale:3,useCORS:true,logging:false,backgroundColor:'#fff'});
+          pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',cx,cy,cW,cH);
+          pdf.setFontSize(5);pdf.setTextColor(100);
+          pdf.text((v.name||('P'+(vi+1)))+' '+side,cx+1,cy+cH+3.5);
+        }finally{document.body.removeChild(div);}
+        cx+=cW+gap;
       }
     }
-  }
-
-  const shopName = document.getElementById('shopName').value || 'novelty';
-  pdf.save(`novelty_cards_${shopName}.pdf`);
+    pdf.save('novelty_'+(document.getElementById('shopName').value||'card')+'.pdf');
+  }catch(e){showErr('PDF生成エラー: '+e.message);}
+  finally{showLoad(false);}
 }
 
-function createPDFElement(html) {
-  const div = document.createElement('div');
-  div.style.cssText = 'width:176px;height:291px;overflow:hidden;';
-  div.innerHTML = html;
-  return div;
+// AI FILE
+async function downloadAI(){
+  if(!variations.length)return;
+  showLoad(true,'.ai用ファイルを生成中（高解像度）...');
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    var v=variations[varIndex];
+    var scaleF=650/176,pxW=650,pxH=1075,gapPx=80;
+    var parts=[];
+    var faceList=[['表面',v.frontHtml],['裏面',v.backHtml]];
+    for(var fi=0;fi<faceList.length;fi++){
+      var label=faceList[fi][0],html=faceList[fi][1];
+      var div=document.createElement('div');
+      div.style.cssText='position:fixed;left:-9999px;top:0;width:176px;height:291px;overflow:hidden;background:#fff;';
+      div.innerHTML=html;document.body.appendChild(div);
+      try{
+        var canvas=await html2canvas(div,{scale:scaleF,useCORS:true,logging:false,backgroundColor:'#fff'});
+        parts.push({label:label,img:canvas.toDataURL('image/png')});
+      }finally{document.body.removeChild(div);}
+    }
+    var totalW=pxW*2+gapPx;
+    var svg='<?xml version="1.0" encoding="utf-8"?>\n<!-- iFLAG Novelty Generator | 300dpi | 55x91mm -->\n<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 '+totalW+' '+pxH+'" width="'+totalW+'px" height="'+pxH+'px">\n<title>'+(document.getElementById('shopName').value||'Novelty')+'</title>\n<desc>印刷用ノベルティカード 300dpi 55x91mm 表裏</desc>\n';
+    parts.forEach(function(p,i){
+      var ox=i*(pxW+gapPx);
+      svg+='<g id="'+p.label+'">\n<rect x="'+ox+'" y="0" width="'+pxW+'" height="'+pxH+'" fill="none" stroke="#cccccc" stroke-width="2" stroke-dasharray="8,4"/>\n<image x="'+ox+'" y="0" width="'+pxW+'" height="'+pxH+'" xlink:href="'+p.img+'"/>\n<text x="'+ox+'" y="'+(pxH+40)+'" font-family="sans-serif" font-size="28" fill="#888888">'+p.label+'</text>\n</g>\n';
+    });
+    svg+='</svg>';
+    var blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download='novelty_'+(document.getElementById('shopName').value||'card')+'_'+(v.name||'p1')+'.ai';
+    a.click();URL.revokeObjectURL(url);
+  }catch(e){showErr('.ai生成エラー: '+e.message);}
+  finally{showLoad(false);}
 }
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve; s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
-
-// ===== UTILS =====
-function showLoading(show, text = '') {
-  const el = document.getElementById('loading');
-  el.classList.toggle('active', show);
-  if (text) document.getElementById('loadingText').textContent = text;
-}
-
-function showError(msg) {
-  document.getElementById('errorMsg').innerHTML = `<div class="msg error">${msg}</div>`;
-}
-function clearError() {
-  document.getElementById('errorMsg').innerHTML = '';
-}
-
-let promptVisible = false;
-function togglePrompt() {
-  promptVisible = !promptVisible;
-  if (promptVisible) {
-    // 現時点のフォーム内容でプロンプトを組み立てて表示
-    const data = buildPrompt();
-    const prompt = buildAPIPrompt(data);
-    document.getElementById('promptText').textContent = prompt;
-  }
-  document.getElementById('promptBox').classList.toggle('visible', promptVisible);
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+function showLoad(show,text){document.getElementById('loading').classList.toggle('active',show);if(text)document.getElementById('loadingText').textContent=text;}
+function showErr(msg){document.getElementById('errorMsg').innerHTML='<div class="msg error">'+msg+'</div>';}
+function clearErr(){document.getElementById('errorMsg').innerHTML='';}
+var promptVisible=false;
+function togglePrompt(){
+  promptVisible=!promptVisible;
+  if(promptVisible)document.getElementById('promptText').textContent=buildPrompt(getFormData());
+  document.getElementById('promptBox').classList.toggle('visible',promptVisible);
 }
 </script>
-
 </body>
 </html>
