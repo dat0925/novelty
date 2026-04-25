@@ -313,6 +313,36 @@
     <textarea id="designNote" style="min-height:128px" placeholder="例：桜のモチーフを入れたい、英語表記も入れて、QRを大きくして、ロゴ的な文字デザインにして など"></textarea>
   </div>
 
+  <!-- 参考画像アップロード -->
+  <div class="sec">
+    <div class="seclbl">参考画像（任意）</div>
+    <div id="refDropZone" onclick="document.getElementById('refInput').click()"
+      style="border:2px dashed var(--bd);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--sf2);">
+      <div style="font-size:24px;margin-bottom:6px">🖼️</div>
+      <div style="font-size:13px;color:var(--tx2)">クリックまたはドラッグ＆ドロップ</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">JPG・PNG・GIF・WEBP（最大5MB）</div>
+    </div>
+    <input type="file" id="refInput" accept="image/*" style="display:none" onchange="handleRefImage(event)">
+
+    <!-- プレビュー -->
+    <div id="refPreview" style="display:none;margin-top:10px;position:relative;">
+      <img id="refImg" style="width:100%;border-radius:8px;border:1px solid var(--bd);display:block;">
+      <button onclick="clearRefImage()"
+        style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">✕</button>
+      <div style="font-size:11px;color:var(--tx2);margin-top:6px">この画像のデザインを参考にしてカードを生成します</div>
+    </div>
+
+    <!-- 参考にする度合い -->
+    <div id="refStrengthArea" style="display:none;margin-top:10px">
+      <label>参考にする度合い</label>
+      <div class="chips" id="refStrengthChips">
+        <div class="chip" data-v="ゆるく参考にする（雰囲気だけ）">ゆるく</div>
+        <div class="chip on" data-v="バランスよく参考にする（色・レイアウト・雰囲気）">バランス</div>
+        <div class="chip" data-v="できるだけ忠実に再現する（色・構図・フォントを近づける）">忠実に</div>
+      </div>
+    </div>
+  </div>
+
   <button class="btngen" id="btnGen" onclick="generate()">✨ AIでデザイン生成</button>
   <button class="btnsub" onclick="togglePrompt()">プロンプト確認</button>
   <div id="errArea"></div>
@@ -608,7 +638,7 @@ function generateQRDataUrl(url, sizePx){
   });
 }
 
-function buildPrompt(qrImgTag){
+function buildPrompt(qrImgTag, refStrength){
   const d={cat:getCat(),shop:document.getElementById('shopName').value.trim(),
     catch:document.getElementById('catchcopy').value,addr:getAddr(),
     tel:document.getElementById('tel').value,qr:document.getElementById('qrUrl').value,
@@ -617,6 +647,15 @@ function buildPrompt(qrImgTag){
     layout:gc('layoutChips'),font:gc('fontChips'),
     decor:gc('decorChips'),bg:gc('bgChips'),qrsize:gc('qrSizeChips'),
     vars:parseInt(gc('varChips'))||3,design:document.getElementById('designNote').value};
+
+  const refSection=refStrength?`
+【参考画像について】
+添付した画像を参考にしてデザインを生成してください。
+参考にする度合い: ${refStrength}
+- 「ゆるく参考にする」: 全体の雰囲気・トーンのみ参考にする
+- 「バランスよく参考にする」: 配色・レイアウト・雰囲気を参考にしつつ、店舗情報に合わせてアレンジする
+- 「できるだけ忠実に再現する」: 色・構図・フォントの雰囲気・装飾要素をできる限り近づける
+`:'';
 
   return `あなたはプロのグラフィックデザイナーです。
 店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを${d.vars}パターン生成してください。
@@ -631,7 +670,7 @@ ${d.addr?'住所: '+d.addr:''}
 ${d.tel?'電話: '+d.tel:''}
 ${d.qr?'QRコード先URL: '+d.qr:''}
 ${d.note?'その他情報:\n'+d.note:''}
-
+${refSection}
 【デザイン詳細設定】
 - テイスト・雰囲気: ${d.style}
 - メインカラー: ${d.color}
@@ -689,14 +728,27 @@ async function generate(){
     qrImgTag=`<svg width="${qrSize}" height="${qrSize}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="white"/><rect x="5" y="5" width="30" height="30" rx="2" fill="black"/><rect x="10" y="10" width="20" height="20" fill="white"/><rect x="13" y="13" width="14" height="14" fill="black"/><rect x="45" y="5" width="30" height="30" rx="2" fill="black"/><rect x="50" y="10" width="20" height="20" fill="white"/><rect x="53" y="13" width="14" height="14" fill="black"/><rect x="5" y="45" width="30" height="30" rx="2" fill="black"/><rect x="10" y="50" width="20" height="20" fill="white"/><rect x="13" y="53" width="14" height="14" fill="black"/><rect x="45" y="45" width="8" height="8" fill="black"/><rect x="55" y="45" width="8" height="8" fill="black"/><rect x="65" y="45" width="8" height="8" fill="black"/><rect x="45" y="55" width="8" height="8" fill="black"/><rect x="65" y="55" width="8" height="8" fill="black"/><rect x="45" y="65" width="8" height="8" fill="black"/><rect x="55" y="65" width="8" height="8" fill="black"/><rect x="65" y="65" width="8" height="8" fill="black"/></svg>`;
   }
 
-  // Step2: AI生成
+  // Step2: AI生成（参考画像があればVision API）
   setLoad(true,'AIがデザインを生成中... (30〜60秒)');
-  const prompt=buildPrompt(qrImgTag);
+  const refStrength = refImageData ? gc('refStrengthChips') : null;
+  const prompt=buildPrompt(qrImgTag, refStrength);
+
+  // メッセージ内容を組み立て（画像あり/なし）
+  let msgContent;
+  if(refImageData){
+    msgContent=[
+      {type:'image',source:{type:'base64',media_type:refImageData.mediaType,data:refImageData.base64}},
+      {type:'text',text:prompt}
+    ];
+  } else {
+    msgContent=prompt;
+  }
+
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:msgContent}]})
     });
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'API error '+res.status);}
     const result=await res.json();
@@ -807,10 +859,56 @@ function loadSc(src){return new Promise((r,j)=>{const s=document.createElement('
 function setLoad(on,txt=''){document.getElementById('loading').classList.toggle('on',on);if(txt)document.getElementById('loadtxt').textContent=txt;}
 function showErr(m){document.getElementById('errArea').innerHTML=m?`<div class="msg err">${m}</div>`:'';}
 function clearErr(){document.getElementById('errArea').innerHTML='';}
+
+// ===== 参考画像 =====
+let refImageData=null; // {base64, mediaType}
+
+// ドロップゾーン
+const dz=document.getElementById('refDropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--ac)';dz.style.background='var(--acl)';});
+dz.addEventListener('dragleave',()=>{dz.style.borderColor='var(--bd)';dz.style.background='var(--sf2)';});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--bd)';dz.style.background='var(--sf2)';const f=e.dataTransfer.files[0];if(f)processRefFile(f);});
+
+['refStrengthChips'].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.addEventListener('click',e=>{
+    const c=e.target.closest('.chip');if(!c)return;
+    el.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  });
+});
+
+function handleRefImage(e){const f=e.target.files[0];if(f)processRefFile(f);}
+
+function processRefFile(file){
+  if(!file.type.startsWith('image/')){alert('画像ファイルを選択してください');return;}
+  if(file.size>5*1024*1024){alert('ファイルサイズは5MB以内にしてください');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    const base64=dataUrl.split(',')[1];
+    const mediaType=file.type;
+    refImageData={base64,mediaType};
+    document.getElementById('refImg').src=dataUrl;
+    document.getElementById('refPreview').style.display='block';
+    document.getElementById('refStrengthArea').style.display='block';
+    dz.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearRefImage(){
+  refImageData=null;
+  document.getElementById('refImg').src='';
+  document.getElementById('refPreview').style.display='none';
+  document.getElementById('refStrengthArea').style.display='none';
+  document.getElementById('refInput').value='';
+  dz.style.display='block';
+}
+
 let promptOn=false;
 function togglePrompt(){
   promptOn=!promptOn;
-  if(promptOn)document.getElementById('prompttxt').textContent=buildPrompt('（QRコードはここに実際のbase64画像が入ります）');
+  if(promptOn)document.getElementById('prompttxt').textContent=buildPrompt('（QRコードはここに実際のbase64画像が入ります）')+(refImageData?'\n\n【参考画像あり：Vision APIで送信されます】':'');
   document.getElementById('promptbox').classList.toggle('on',promptOn);
 }
 </script>
