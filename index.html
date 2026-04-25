@@ -255,18 +255,7 @@
     </div>
 
     <label>メインカラー</label>
-    <div class="chips" id="colorChips">
-      <div class="chip on" data-v="ゴールド×ダークグリーン">ゴールド×DK緑</div>
-      <div class="chip" data-v="ネイビー×シルバー">ネイビー×銀</div>
-      <div class="chip" data-v="テラコッタ×ベージュ">テラコッタ</div>
-      <div class="chip" data-v="ブラック×ピンクゴールド">黒×ピンク金</div>
-      <div class="chip" data-v="ラベンダー×ライトグレー">ラベンダー</div>
-      <div class="chip" data-v="ホワイト×ロイヤルブルー">白×ブルー</div>
-      <div class="chip" data-v="ブラウン×クリーム">ブラウン</div>
-      <div class="chip" data-v="ミントグリーン×ホワイト">ミント×白</div>
-      <div class="chip" data-v="コーラルピンク×ゴールド">コーラル×金</div>
-      <div class="chip" data-v="チャコール×オレンジ">チャコール×橙</div>
-    </div>
+    <div id="colorChips" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
 
     <label>レイアウト</label>
     <div class="chips" id="layoutChips">
@@ -413,15 +402,80 @@ function getCat(){
   return selMaj||'（未選択）';
 }
 
-['styleChips','colorChips','varChips','layoutChips','fontChips','decorChips','bgChips','qrSizeChips'].forEach(id=>{
+// ===== COLOR SWATCH CHIPS =====
+const COLOR_PALETTE=[
+  {v:'ゴールド×ダークグリーン', label:'ゴールド×DK緑', c1:'#c9a84c', c2:'#1a3d2b'},
+  {v:'ネイビー×シルバー',       label:'ネイビー×銀',   c1:'#1b2a4a', c2:'#b0b8c8'},
+  {v:'テラコッタ×ベージュ',     label:'テラコッタ×ベージュ', c1:'#c1603b', c2:'#f0e6d3'},
+  {v:'ブラック×ピンクゴールド', label:'黒×ピンク金',   c1:'#1a1a1a', c2:'#e8a0a0'},
+  {v:'ラベンダー×ライトグレー', label:'ラベンダー×グレー', c1:'#9b8ec4', c2:'#e8e4f0'},
+  {v:'ホワイト×ロイヤルブルー', label:'白×ロイヤルブルー', c1:'#f5f5f5', c2:'#2653c7'},
+  {v:'ブラウン×クリーム',       label:'ブラウン×クリーム', c1:'#6b4226', c2:'#fdf3e0'},
+  {v:'ミントグリーン×ホワイト', label:'ミント×白',      c1:'#5bc4a0', c2:'#f0fbf7'},
+  {v:'コーラルピンク×ゴールド', label:'コーラル×ゴールド', c1:'#e8735a', c2:'#d4a843'},
+  {v:'チャコール×オレンジ',     label:'チャコール×橙',  c1:'#3d3d3d', c2:'#e8833a'},
+];
+
+(function initColorChips(){
+  const el=document.getElementById('colorChips');
+  COLOR_PALETTE.forEach((p,i)=>{
+    const chip=document.createElement('div');
+    chip.dataset.v=p.v;
+    chip.title=p.v;
+    chip.style.cssText=[
+      'display:flex;align-items:center;gap:0;',
+      'border-radius:20px;overflow:hidden;cursor:pointer;',
+      'border:2px solid transparent;',
+      'box-shadow:0 1px 4px rgba(0,0,0,.12);',
+      'transition:all .15s;flex-shrink:0;',
+    ].join('');
+    if(i===0) chip.style.border='2px solid #5b4ef0';
+
+    // カラーバー（左半分）
+    const bar1=document.createElement('div');
+    bar1.style.cssText=`width:22px;height:28px;background:${p.c1};flex-shrink:0;`;
+    const bar2=document.createElement('div');
+    bar2.style.cssText=`width:22px;height:28px;background:${p.c2};flex-shrink:0;`;
+
+    // ラベル
+    const lbl=document.createElement('div');
+    lbl.textContent=p.label;
+    lbl.style.cssText='padding:0 10px 0 8px;font-size:11px;white-space:nowrap;background:#fff;height:28px;display:flex;align-items:center;color:#1a1a2e;font-family:"Noto Sans JP",sans-serif;';
+
+    chip.appendChild(bar1);chip.appendChild(bar2);chip.appendChild(lbl);
+
+    chip.onclick=()=>{
+      document.querySelectorAll('#colorChips > div').forEach(c=>{
+        c.style.border='2px solid transparent';
+        c.style.boxShadow='0 1px 4px rgba(0,0,0,.12)';
+        c.querySelector('div:last-child').style.color='#1a1a2e';
+      });
+      chip.style.border='2px solid #5b4ef0';
+      chip.style.boxShadow='0 0 0 3px rgba(91,78,240,.18)';
+    };
+
+    el.appendChild(chip);
+  });
+})();
+
+function gc(id){
+  if(id==='colorChips'){
+    // カラーチップは border で選択判定
+    const chips=[...document.querySelectorAll('#colorChips > div')];
+    const sel=chips.find(c=>c.style.border.includes('#5b4ef0'));
+    return sel?sel.dataset.v:'';
+  }
+  const e=document.querySelector('#'+id+' .chip.on');
+  return e?e.dataset.v:'';
+}
+
+['styleChips','varChips','layoutChips','fontChips','decorChips','bgChips','qrSizeChips'].forEach(id=>{
   const el=document.getElementById(id);if(!el)return;
   el.addEventListener('click',e=>{
     const c=e.target.closest('.chip');if(!c)return;
     el.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
   });
 });
-function gc(id){const e=document.querySelector('#'+id+' .chip.on');return e?e.dataset.v:'';}
-
 // ===== SHOP NOTE HELPERS =====
 function addShopNote(text){
   const ta=document.getElementById('shopNote');
