@@ -86,6 +86,8 @@
     .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:360px;gap:12px;color:var(--tx2);}
     .empty .ico{font-size:42px;opacity:.22;}
     .empty p{font-size:13px;}
+    .qbtn{padding:4px 9px;border-radius:6px;border:1px solid var(--bd);background:var(--sf);color:var(--tx2);font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s;white-space:nowrap;}
+    .qbtn:hover{border-color:var(--ac);color:var(--ac);background:var(--acl);}
     @media(max-width:820px){.app{grid-template-columns:1fr;}.panel{border-right:none;border-bottom:1px solid var(--bd);}}
   </style>
 </head>
@@ -150,7 +152,27 @@
     <label>店舗名 <span style="color:var(--rd)">*</span></label>
     <input type="text" id="shopName" placeholder="例：Hair Salon Éclat">
     <label>キャッチコピー（任意）</label>
-    <input type="text" id="catchcopy" placeholder="例：髪と心をリフレッシュ">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:end">
+      <input type="text" id="catchcopy" placeholder="例：髪と心をリフレッシュ">
+      <button class="btnzip" id="btnCatch" onclick="suggestCatchcopy()">✨ AI提案</button>
+    </div>
+    <!-- AI提案パネル -->
+    <div id="catchPanel" style="display:none;margin-top:8px;background:var(--acl);border:1px solid var(--ac);border-radius:10px;padding:12px;">
+      <div style="font-size:11px;color:var(--ac);font-weight:700;margin-bottom:8px">キャッチコピー候補（タップで入力）</div>
+      <div id="catchList" style="display:flex;flex-direction:column;gap:5px"></div>
+    </div>
+    <!-- デザイン先行 or 即提案モーダル -->
+    <div id="catchModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;">
+      <div style="background:var(--sf);border-radius:14px;padding:28px 24px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">キャッチコピーのAI提案</div>
+        <div style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.6">デザイン設定を先に決めてから提案しますか？<br>それともすぐに提案しますか？</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onclick="catchGoDesign()" style="padding:11px;border-radius:9px;border:2px solid var(--ac);background:var(--acl);color:var(--ac);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">🎨 先にデザイン設定する</button>
+          <button onclick="catchNow()" style="padding:11px;border-radius:9px;border:none;background:var(--ac);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⚡ すぐに提案してもらう</button>
+          <button onclick="document.getElementById('catchModal').style.display='none'" style="padding:8px;border-radius:9px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">キャンセル</button>
+        </div>
+      </div>
+    </div>
     <label>郵便番号</label>
     <div class="ziprow">
       <input type="text" id="zipCode" placeholder="例：5300001（ハイフン不要）" maxlength="8">
@@ -170,11 +192,54 @@
     <label>QRコード先URL（任意）</label>
     <input type="text" id="qrUrl" placeholder="例：https://g.page/r/...">
     <label>その他店舗情報（定休日・営業時間など）</label>
-    <textarea id="shopNote" placeholder="定休日：火曜日&#10;営業時間：10:00〜20:00&#10;駐車場あり"></textarea>
+    <!-- クイック入力ヘルパー -->
+    <div style="margin-bottom:6px">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:5px">クイック入力：</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px" id="shopNoteHelpers">
+        <button class="qbtn" onclick="addShopNote('定休日：月曜日')">定休日:月</button>
+        <button class="qbtn" onclick="addShopNote('定休日：火曜日')">定休日:火</button>
+        <button class="qbtn" onclick="addShopNote('定休日：水曜日')">定休日:水</button>
+        <button class="qbtn" onclick="addShopNote('定休日：木曜日')">定休日:木</button>
+        <button class="qbtn" onclick="addShopNote('定休日：金曜日')">定休日:金</button>
+        <button class="qbtn" onclick="addShopNote('定休日：土曜日')">定休日:土</button>
+        <button class="qbtn" onclick="addShopNote('定休日：日曜日')">定休日:日</button>
+        <button class="qbtn" onclick="addShopNote('定休日：不定休')">不定休</button>
+        <button class="qbtn" onclick="addShopNote('定休日：年中無休')">年中無休</button>
+        <button class="qbtn" onclick="pickHours()">営業時間を選ぶ</button>
+        <button class="qbtn" onclick="addShopNote('駐車場あり')">P:あり</button>
+        <button class="qbtn" onclick="addShopNote('駐車場なし')">P:なし</button>
+        <button class="qbtn" onclick="addShopNote('クレジットカード使用可')">カード可</button>
+        <button class="qbtn" onclick="addShopNote('PayPay対応')">PayPay</button>
+        <button class="qbtn" onclick="addShopNote('完全予約制')">完全予約制</button>
+        <button class="qbtn" onclick="addShopNote('予約優先')">予約優先</button>
+        <button class="qbtn" onclick="addShopNote('当日予約OK')">当日OK</button>
+      </div>
+    </div>
+    <!-- 営業時間ピッカー（hidden） -->
+    <div id="hoursPicker" style="display:none;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:6px">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">営業時間を選択</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px;align-items:center">
+        <select id="hoursFrom" style="font-size:12px;padding:5px 6px">
+          <option>9:00</option><option>9:30</option><option>10:00</option><option>10:30</option>
+          <option>11:00</option><option>11:30</option><option>12:00</option><option>13:00</option>
+          <option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option>
+          <option>18:00</option>
+        </select>
+        <span style="font-size:12px;color:var(--tx2)">〜</span>
+        <select id="hoursTo" style="font-size:12px;padding:5px 6px">
+          <option>17:00</option><option>18:00</option><option>18:30</option><option>19:00</option>
+          <option>19:30</option><option>20:00</option><option>20:30</option><option>21:00</option>
+          <option>21:30</option><option>22:00</option><option>22:30</option><option>23:00</option>
+        </select>
+        <button onclick="applyHours()" style="padding:5px 10px;border-radius:6px;border:none;background:var(--ac);color:#fff;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">追加</button>
+      </div>
+    </div>
+    <textarea id="shopNote" style="min-height:128px" placeholder="定休日：火曜日&#10;営業時間：10:00〜20:00&#10;駐車場あり&#10;クレジットカード使用可"></textarea>
   </div>
 
   <div class="sec">
     <div class="seclbl">デザイン設定</div>
+
     <label>雰囲気・テイスト</label>
     <div class="chips" id="styleChips">
       <div class="chip on" data-v="高級感・洗練">高級感</div>
@@ -183,7 +248,12 @@
       <div class="chip" data-v="シンプル・清潔感">シンプル</div>
       <div class="chip" data-v="和風・モダン">和風</div>
       <div class="chip" data-v="プロフェッショナル・信頼感">プロ・信頼</div>
+      <div class="chip" data-v="レトロ・ヴィンテージ">レトロ</div>
+      <div class="chip" data-v="フェミニン・上品">フェミニン</div>
+      <div class="chip" data-v="スポーティ・活発">スポーティ</div>
+      <div class="chip" data-v="クール・スタイリッシュ">クール</div>
     </div>
+
     <label>メインカラー</label>
     <div class="chips" id="colorChips">
       <div class="chip on" data-v="ゴールド×ダークグリーン">ゴールド×DK緑</div>
@@ -191,17 +261,66 @@
       <div class="chip" data-v="テラコッタ×ベージュ">テラコッタ</div>
       <div class="chip" data-v="ブラック×ピンクゴールド">黒×ピンク金</div>
       <div class="chip" data-v="ラベンダー×ライトグレー">ラベンダー</div>
-      <div class="chip" data-v="ホワイト×ブルー">白×ブルー</div>
+      <div class="chip" data-v="ホワイト×ロイヤルブルー">白×ブルー</div>
       <div class="chip" data-v="ブラウン×クリーム">ブラウン</div>
+      <div class="chip" data-v="ミントグリーン×ホワイト">ミント×白</div>
+      <div class="chip" data-v="コーラルピンク×ゴールド">コーラル×金</div>
+      <div class="chip" data-v="チャコール×オレンジ">チャコール×橙</div>
     </div>
+
+    <label>レイアウト</label>
+    <div class="chips" id="layoutChips">
+      <div class="chip on" data-v="センタリング・対称">センター寄せ</div>
+      <div class="chip" data-v="左寄せ・縦書き風">左寄せ</div>
+      <div class="chip" data-v="大胆な斜めレイアウト">ダイナミック斜め</div>
+      <div class="chip" data-v="枠線・ボーダーを活かしたクラシック">枠線クラシック</div>
+      <div class="chip" data-v="余白を大きく取ったミニマル">ミニマル余白</div>
+    </div>
+
+    <label>フォントの雰囲気</label>
+    <div class="chips" id="fontChips">
+      <div class="chip on" data-v="明朝体系（上品・格調）">明朝系</div>
+      <div class="chip" data-v="ゴシック体系（現代的・読みやすい）">ゴシック系</div>
+      <div class="chip" data-v="手書き風（温かみ・個性）">手書き風</div>
+      <div class="chip" data-v="英字セリフ混在（洗練・国際的）">英字セリフ混在</div>
+    </div>
+
+    <label>装飾・グラフィック要素</label>
+    <div class="chips" id="decorChips">
+      <div class="chip on" data-v="なし（テキスト中心）">装飾なし</div>
+      <div class="chip" data-v="植物・ボタニカル">植物・ボタニカル</div>
+      <div class="chip" data-v="幾何学・抽象パターン">幾何学</div>
+      <div class="chip" data-v="和柄（青海波・麻の葉など）">和柄</div>
+      <div class="chip" data-v="シンプルな罫線・ライン">罫線・ライン</div>
+      <div class="chip" data-v="花・フラワーモチーフ">フラワー</div>
+      <div class="chip" data-v="スター・光彩エフェクト">スター・光彩</div>
+    </div>
+
+    <label>背景スタイル</label>
+    <div class="chips" id="bgChips">
+      <div class="chip on" data-v="グラデーション">グラデーション</div>
+      <div class="chip" data-v="単色フラット">単色フラット</div>
+      <div class="chip" data-v="テクスチャ風（大理石・木目など）">テクスチャ風</div>
+      <div class="chip" data-v="ホワイトベース（清潔感）">ホワイトベース</div>
+      <div class="chip" data-v="ダークベース（高級感）">ダークベース</div>
+    </div>
+
+    <label>QRコードサイズ</label>
+    <div class="chips" id="qrSizeChips">
+      <div class="chip" data-v="小さめ（控えめ）">小</div>
+      <div class="chip on" data-v="標準">標準</div>
+      <div class="chip" data-v="大きめ（目立つ）">大</div>
+    </div>
+
     <label>バリエーション数</label>
     <div class="chips" id="varChips">
       <div class="chip" data-v="1">1種</div>
       <div class="chip on" data-v="3">3種</div>
       <div class="chip" data-v="6">6種</div>
     </div>
+
     <label>その他デザイン要望</label>
-    <textarea id="designNote" placeholder="例：桜のモチーフ、英語表記も、QRを大きくして など"></textarea>
+    <textarea id="designNote" style="min-height:128px" placeholder="例：桜のモチーフを入れたい、英語表記も入れて、QRを大きくして、ロゴ的な文字デザインにして など"></textarea>
   </div>
 
   <button class="btngen" id="btnGen" onclick="generate()">✨ AIでデザイン生成</button>
@@ -294,14 +413,105 @@ function getCat(){
   return selMaj||'（未選択）';
 }
 
-['styleChips','colorChips','varChips'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{
+['styleChips','colorChips','varChips','layoutChips','fontChips','decorChips','bgChips','qrSizeChips'].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.addEventListener('click',e=>{
     const c=e.target.closest('.chip');if(!c)return;
-    document.querySelectorAll('#'+id+' .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+    el.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
   });
 });
 function gc(id){const e=document.querySelector('#'+id+' .chip.on');return e?e.dataset.v:'';}
 
+// ===== SHOP NOTE HELPERS =====
+function addShopNote(text){
+  const ta=document.getElementById('shopNote');
+  const cur=ta.value.trim();
+  ta.value=cur?(cur+'\n'+text):text;
+  ta.focus();
+}
+function pickHours(){
+  const hp=document.getElementById('hoursPicker');
+  hp.style.display=hp.style.display==='none'?'block':'none';
+}
+function applyHours(){
+  const from=document.getElementById('hoursFrom').value;
+  const to=document.getElementById('hoursTo').value;
+  addShopNote('営業時間：'+from+'〜'+to);
+  document.getElementById('hoursPicker').style.display='none';
+}
+
+// ===== CATCHCOPY AI SUGGEST =====
+function suggestCatchcopy(){
+  const shop=document.getElementById('shopName').value.trim();
+  if(!shop){alert('先に店舗名を入力してください');return;}
+  document.getElementById('catchModal').style.display='flex';
+}
+function catchGoDesign(){
+  document.getElementById('catchModal').style.display='none';
+  // デザイン設定セクションへスクロール
+  const secEls=document.querySelectorAll('.seclbl');
+  for(const s of secEls){
+    if(s.textContent.includes('デザイン設定')){
+      s.closest('.sec').scrollIntoView({behavior:'smooth',block:'start'});break;
+    }
+  }
+}
+async function catchNow(){
+  document.getElementById('catchModal').style.display='none';
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){if(!accOpen)toggleAcc();alert('APIキーを入力してください');return;}
+  const shop=document.getElementById('shopName').value.trim();
+  const cat=getCat();
+  const style=gc('styleChips');
+  const color=gc('colorChips');
+  const note=document.getElementById('shopNote').value;
+
+  const catchPanel=document.getElementById('catchPanel');
+  const catchList=document.getElementById('catchList');
+  catchPanel.style.display='block';
+  catchList.innerHTML='<div style="font-size:12px;color:var(--tx2)">⏳ 生成中...</div>';
+
+  try{
+    const prompt=`以下の店舗に合うキャッチコピーを5つ提案してください。
+店舗名: ${shop}
+業種: ${cat}
+テイスト: ${style||'指定なし'}
+カラー: ${color||'指定なし'}
+${note?'店舗情報: '+note:''}
+
+条件:
+- 各20文字以内
+- 業種・テイストに合ったトーン
+- 口コミ募集カードに印刷するものとして魅力的な文言
+- JSONのみ返す: {"suggestions":["案1","案2","案3","案4","案5"]}`;
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:500,messages:[{role:'user',content:prompt}]})
+    });
+    const result=await res.json();
+    const text=result.content.map(b=>b.text||'').join('');
+    const m=text.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('parse error');
+    const {suggestions}=JSON.parse(m[0]);
+    catchList.innerHTML='';
+    suggestions.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.style.cssText='padding:8px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font-size:13px;cursor:pointer;text-align:left;font-family:"Noto Sans JP",sans-serif;transition:all .15s;width:100%';
+      btn.textContent=s;
+      btn.onmouseover=()=>{btn.style.borderColor='var(--ac)';btn.style.background='var(--acl)';};
+      btn.onmouseout=()=>{btn.style.borderColor='var(--bd)';btn.style.background='var(--sf)';};
+      btn.onclick=()=>{
+        document.getElementById('catchcopy').value=s;
+        catchPanel.style.display='none';
+      };
+      catchList.appendChild(btn);
+    });
+  }catch(e){
+    catchList.innerHTML=`<div style="font-size:12px;color:var(--rd)">エラー: ${e.message}</div>`;
+  }
+}
 async function lookupZip(){
   let z=document.getElementById('zipCode').value.replace(/[^\d]/g,'');
   if(z.length!==7){alert('郵便番号は7桁で入力してください');return;}
@@ -323,7 +533,10 @@ function buildPrompt(){
   const d={cat:getCat(),shop:document.getElementById('shopName').value.trim(),
     catch:document.getElementById('catchcopy').value,addr:getAddr(),
     tel:document.getElementById('tel').value,qr:document.getElementById('qrUrl').value,
-    note:document.getElementById('shopNote').value,style:gc('styleChips'),color:gc('colorChips'),
+    note:document.getElementById('shopNote').value,
+    style:gc('styleChips'),color:gc('colorChips'),
+    layout:gc('layoutChips'),font:gc('fontChips'),
+    decor:gc('decorChips'),bg:gc('bgChips'),qrsize:gc('qrSizeChips'),
     vars:parseInt(gc('varChips'))||3,design:document.getElementById('designNote').value};
   return `あなたはプロのグラフィックデザイナーです。
 店舗向けの「Googleクチコミ募集ショップカード」のHTMLデザインを${d.vars}パターン生成してください。
@@ -339,8 +552,24 @@ ${d.tel?'電話: '+d.tel:''}
 ${d.qr?'QRコード先URL: '+d.qr:''}
 ${d.note?'その他情報:\n'+d.note:''}
 
-【デザイン】テイスト: ${d.style} / カラー: ${d.color}
-${d.design?'要望: '+d.design:''}
+【デザイン詳細設定】
+- テイスト・雰囲気: ${d.style}
+- メインカラー: ${d.color}
+- レイアウト: ${d.layout}
+- フォントの雰囲気: ${d.font}
+- 装飾・グラフィック要素: ${d.decor}
+- 背景スタイル: ${d.bg}
+- QRコードサイズ: ${d.qrsize}
+${d.design?'- その他要望: '+d.design:''}
+
+【出力ルール - 必ず守ること】
+1. JSON形式のみ出力、最初の文字は { 、説明文や前置き一切不要
+2. HTML属性は必ずダブルクォート: style="..." (シングルクォート禁止)
+3. JSON内のダブルクォートは \\" にエスケープ
+4. classやstyleブロック禁止、インラインstyleのみ
+
+出力形式:
+{"variations":[{"name":"パターン名","frontHtml":"<div style=\\"width:176px;height:291px\\">...</div>","backHtml":"<div style=\\"width:176px;height:291px\\">...</div>"}]}
 
 【出力ルール - 必ず守ること】
 1. JSON形式のみ出力、最初の文字は { 、説明文や前置き一切不要
