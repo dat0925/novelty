@@ -686,6 +686,8 @@ ${d.design?'- その他要望: '+d.design:''}
 2. HTML属性は必ずダブルクォート: style="..." (シングルクォート禁止)
 3. JSON内のダブルクォートは \\" にエスケープ
 4. classやstyleブロック禁止、インラインstyleのみ
+5. HTMLは簡潔に書くこと（1パターンあたり表裏合計3000文字以内を目安）
+6. 装飾は最小限のSVGまたはCSSグラデーションで表現し、巨大なSVGは避ける
 
 出力形式:
 {"variations":[{"name":"パターン名","frontHtml":"<div style=\\"width:176px;height:291px\\">...</div>","backHtml":"<div style=\\"width:176px;height:291px\\">...</div>"}]}
@@ -748,10 +750,15 @@ async function generate(){
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:msgContent}]})
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:16000,messages:[{role:'user',content:msgContent}]})
     });
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'API error '+res.status);}
     const result=await res.json();
+    // トークン不足で途中打ち切りの場合は警告
+    if(result.stop_reason==='max_tokens'){
+      console.warn('Response truncated: max_tokens reached');
+      showErr('⚠️ 応答が途中で切れました。バリエーション数を減らすか、再生成してみてください。');
+    }
     const text=result.content.map(b=>b.text||'').join('');
     const parsed=parseJson(text);
     vars=parsed.variations||[];
